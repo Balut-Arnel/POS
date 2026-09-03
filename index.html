@@ -59,7 +59,6 @@
     display:flex; align-items:center; gap:6px; white-space:nowrap;
   }
   .head-btn:hover{background:rgba(255,255,255,0.16);}
-  .head-btn.shift-on{background:var(--herb); border-color:var(--herb);}
   .clock{font-family:var(--mono); font-size:12.5px; color:var(--muted2); margin-right:2px; display:none;}
   @media(min-width:900px){.clock{display:block;}}
   .lock-badge{font-size:10px; opacity:.75; margin-left:2px;}
@@ -114,6 +113,9 @@
   .ticket-tab-close{font-size:12px; margin-left:2px; opacity:.7;}
   .ticket-tab-add{
     background:var(--herb); color:#fff; border:none; border-radius:8px; padding:7px 11px; font-size:14px; font-weight:900;
+  }
+  .ticket-tab-clear{
+    background:var(--panel); color:var(--chili); border:1.5px solid var(--chili); border-radius:8px; padding:7px 10px; font-size:13px;
   }
 
   .ticket{
@@ -263,16 +265,6 @@
   .chart-wrap{margin-bottom:18px;}
   .chart-title{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted2); margin-bottom:8px; font-weight:700;}
 
-  /* shift modal */
-  .shift-form{display:flex; flex-direction:column; gap:10px;}
-  .shift-form label{font-size:11.5px; color:var(--muted2); font-weight:700; text-transform:uppercase; letter-spacing:.5px;}
-  .shift-form input, .shift-form select{
-    border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-size:14px; font-family:var(--disp); background:var(--cream);
-  }
-  .shift-summary-row{display:flex; justify-content:space-between; padding:6px 0; font-family:var(--mono); font-size:13px; border-bottom:1px dotted var(--line);}
-  .shift-summary-row.total{font-weight:800; border-bottom:none; padding-top:10px;}
-  .shift-badge{background:var(--cream); border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:12.5px; line-height:1.6;}
-
   /* pin lock */
   .pin-modal{max-width:300px; text-align:center;}
   .pin-modal .modal-body{padding:26px 22px 24px;}
@@ -323,8 +315,6 @@
   </div>
   <div class="head-actions">
     <span class="clock" id="clock"></span>
-    <button class="head-btn" id="cashierBtn" onclick="pickCashier()">👤 <span id="cashierLabel">Staff</span></button>
-    <button class="head-btn" id="shiftBtn" onclick="openShift()">🕐 Shift</button>
     <button class="head-btn" onclick="openHistory()">🧾 Sales</button>
     <button class="head-btn" onclick="requirePin(openSettings)">⚙️ Menu<span class="lock-badge">🔒</span></button>
   </div>
@@ -398,20 +388,6 @@
       </div>
     </div>
     <div class="modal-body" id="historyBody"></div>
-  </div>
-</div>
-
-<div class="overlay" id="shiftOverlay">
-  <div class="modal">
-    <div class="modal-head"><h2>Shift</h2><button class="modal-close" onclick="closeModal('shiftOverlay')">✕</button></div>
-    <div class="modal-body" id="shiftBody"></div>
-  </div>
-</div>
-
-<div class="overlay" id="cashierOverlay">
-  <div class="modal" style="max-width:340px;">
-    <div class="modal-head"><h2>Select Cashier</h2><button class="modal-close" onclick="closeModal('cashierOverlay')">✕</button></div>
-    <div class="modal-body" id="cashierBody"></div>
   </div>
 </div>
 
@@ -500,9 +476,6 @@ const PAYMENT_METHODS = ["Cash","GCash","Maya"];
 
 let menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
 let salesLog = [];
-let staffList = ["Staff"];
-let currentCashier = "Staff";
-let shift = null; // {cashier, startingCash, startTime}
 let dayCounter = {date: todayStr(), count: 0};
 let securityPin = "1234";
 let sheetsUrl = "";
@@ -516,14 +489,18 @@ let activeTicketId = null;
 function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
 function newTicket(){
-  if(dayCounter.date !== todayStr()){ dayCounter = {date: todayStr(), count:0}; }
-  dayCounter.count += 1;
-  saveDayCounter();
   return {
-    id: uid('t'), orderNo: dayCounter.count, lines: [],
+    id: uid('t'), orderNo: null, lines: [],
     table: "", orderType: "Dine-in", paymentMethod: "Cash",
     discType: "none", discValue: 0, cashInput: ""
   };
+}
+function ensureOrderNo(t){
+  if(t.orderNo !== null) return;
+  if(dayCounter.date !== todayStr()){ dayCounter = {date: todayStr(), count:0}; }
+  dayCounter.count += 1;
+  saveDayCounter();
+  t.orderNo = dayCounter.count;
 }
 function activeTicket(){ return tickets.find(t=>t.id===activeTicketId) || tickets[0]; }
 
@@ -532,9 +509,6 @@ async function loadData(){
   try{ const m = await appStorage.get('menu'); if(m && m.value) menu = JSON.parse(m.value); }catch(e){}
   try{ const s = await appStorage.get('salesLog'); if(s && s.value) salesLog = JSON.parse(s.value); }catch(e){}
   try{ const p = await appStorage.get('securityPin'); if(p && p.value) securityPin = p.value; }catch(e){}
-  try{ const st = await appStorage.get('staffList'); if(st && st.value) staffList = JSON.parse(st.value); }catch(e){}
-  try{ const cc = await appStorage.get('currentCashier'); if(cc && cc.value) currentCashier = cc.value; }catch(e){}
-  try{ const sh = await appStorage.get('shift'); if(sh && sh.value) shift = JSON.parse(sh.value); }catch(e){}
   try{ const dc = await appStorage.get('dayCounter'); if(dc && dc.value){ const parsed = JSON.parse(dc.value); if(parsed.date===todayStr()) dayCounter = parsed; } }catch(e){}
   try{ const su = await appStorage.get('sheetsUrl'); if(su && su.value) sheetsUrl = su.value; }catch(e){}
   try{ const ps = await appStorage.get('pendingSync'); if(ps && ps.value) pendingSync = JSON.parse(ps.value); }catch(e){}
@@ -555,16 +529,13 @@ async function loadData(){
     activeTicketId = tickets[0].id;
   }
 
-  renderTabs(); renderGrid(); renderCashier(); renderShiftBtn();
+  renderTabs(); renderGrid();
   renderTicketTabs(); renderCart();
   flushPendingSync();
 }
 async function saveMenu(){ try{ await appStorage.set('menu', JSON.stringify(menu)); }catch(e){ showToast("Menu saved on this device only"); } }
 async function saveSales(){ try{ await appStorage.set('salesLog', JSON.stringify(salesLog)); }catch(e){} }
 async function savePin(){ try{ await appStorage.set('securityPin', securityPin); }catch(e){ showToast("PIN changed for this session only"); } }
-async function saveStaff(){ try{ await appStorage.set('staffList', JSON.stringify(staffList)); }catch(e){} }
-async function saveCashier(){ try{ await appStorage.set('currentCashier', currentCashier); }catch(e){} }
-async function saveShift(){ try{ await appStorage.set('shift', shift ? JSON.stringify(shift) : ""); }catch(e){} }
 async function saveDayCounter(){ try{ await appStorage.set('dayCounter', JSON.stringify(dayCounter)); }catch(e){} }
 async function saveSheetsUrl(){ try{ await appStorage.set('sheetsUrl', sheetsUrl); }catch(e){} }
 async function savePendingSync(){ try{ await appStorage.set('pendingSync', JSON.stringify(pendingSync)); }catch(e){} }
@@ -613,10 +584,10 @@ function renderTicketTabs(){
   const wrap = document.getElementById('ticketTabs');
   wrap.innerHTML = tickets.map(t => `
     <button class="tticket-tab ${t.id===activeTicketId?'active':''}" onclick="switchTicket('${t.id}')">
-      ${t.table ? `🍽️ ${escapeHtml(t.table)}` : `#${t.orderNo}`} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
+      ${t.table ? `🍽️ ${escapeHtml(t.table)}` : (t.orderNo ? `#${t.orderNo}` : 'New')} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
       ${tickets.length>1 ? `<span class="ticket-tab-close" onclick="event.stopPropagation(); closeTicket('${t.id}')">✕</span>` : ''}
     </button>
-  `).join('') + `<button class="ticket-tab-add" onclick="addTicket()">+</button>`;
+  `).join('') + `<button class="ticket-tab-add" onclick="addTicket()">+</button>` + (tickets.length>1 ? `<button class="ticket-tab-clear" onclick="clearAllTickets()" title="Remove all order tabs">🗑</button>` : '');
   saveTickets();
 }
 function onTableInput(){
@@ -630,6 +601,19 @@ function addTicket(){
   renderTicketTabs(); renderCart();
 }
 function switchTicket(id){ activeTicketId = id; renderTicketTabs(); renderCart(); }
+function clearAllTickets(){
+  const withItems = tickets.filter(t=>t.lines.length>0).length;
+  const msg = withItems>0
+    ? `Remove all ${tickets.length} order tabs, including ${withItems} with items still on them? This can't be undone.`
+    : `Remove all ${tickets.length} empty order tabs and start fresh?`;
+  requirePin(function(){
+    if(!confirm(msg)) return;
+    tickets = [newTicket()];
+    activeTicketId = tickets[0].id;
+    renderTicketTabs(); renderCart();
+    showToast("All order tabs cleared");
+  });
+}
 function closeTicket(id){
   const t = tickets.find(x=>x.id===id);
   if(t && t.lines.length>0 && !confirm("This order has items. Discard it?")) return;
@@ -645,6 +629,7 @@ function addToCart(id){
   for(const cat in menu){ const f = menu[cat].find(x=>x.id===id); if(f){item=f; break;} }
   if(!item || item.soldOut) return;
   const t = activeTicket();
+  ensureOrderNo(t);
   const existing = t.lines.find(l=>l.id===id);
   if(existing) existing.qty += 1;
   else t.lines.push({id:item.id, name:item.name, price:item.price, qty:1, note:""});
@@ -702,7 +687,7 @@ function renderCart(){
   const count = t.lines.reduce((s,l)=>s+l.qty,0);
   document.getElementById('mobCount').textContent = tickets.reduce((s,tk)=>s+tk.lines.reduce((a,l)=>a+l.qty,0),0);
   document.getElementById('tableInput').value = t.table || '';
-  document.getElementById('orderTitle').textContent = `Order #${t.orderNo}`;
+  document.getElementById('orderTitle').textContent = t.orderNo ? `Order #${t.orderNo}` : `New Order`;
   document.getElementById('orderMeta').textContent = count>0 ? `${count} item${count>1?'s':''}` : "No items yet";
 
   document.getElementById('orderTypePills').innerHTML = ORDER_TYPES.map(ot =>
@@ -786,6 +771,7 @@ function renderTotals(){
 function completeOrder(){
   const t = activeTicket();
   if(t.lines.length===0) return;
+  ensureOrderNo(t);
   const subtotal = cartSubtotal(t);
   const discount = calcDiscount(t, subtotal);
   const total = Math.max(subtotal - discount, 0);
@@ -796,7 +782,7 @@ function completeOrder(){
   const order = {
     id: uid('ord'), orderNo: t.orderNo, table: t.table || "", time: new Date().toISOString(),
     lines: t.lines.map(l=>({name:l.name, qty:l.qty, price:l.price, note:l.note||""})),
-    orderType: t.orderType, paymentMethod: t.paymentMethod, cashier: currentCashier,
+    orderType: t.orderType, paymentMethod: t.paymentMethod,
     subtotal, discount, total, cash, change, voided:false
   };
   salesLog.unshift(order);
@@ -830,7 +816,6 @@ function printReceipt(order){
   document.getElementById('printArea').innerHTML = `
     <div class="pr-center"><strong>BALUTAN NI ARNEL</strong><br>Order #${order.orderNo}${order.table ? ` — Table ${escapeHtml(order.table)}` : ''} — ${escapeHtml(order.orderType)}</div>
     <div>${d.toLocaleDateString()} ${d.toLocaleTimeString()}</div>
-    <div>Cashier: ${escapeHtml(order.cashier)}</div>
     <hr>
     ${lines}
     <hr>
@@ -873,98 +858,6 @@ function submitPin(){
 document.addEventListener('keydown', (e)=>{
   if(document.getElementById('pinOverlay').classList.contains('show') && e.key==='Enter') submitPin();
 });
-
-/* ================= CASHIER ================= */
-function renderCashier(){ document.getElementById('cashierLabel').textContent = currentCashier; }
-function pickCashier(){
-  const body = document.getElementById('cashierBody');
-  body.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:8px;">
-      ${staffList.map(name => `
-        <button class="menu-row" style="justify-content:space-between; border-radius:8px; padding:10px 12px; border:1.5px solid ${name===currentCashier?'var(--herb)':'var(--line)'}; background:${name===currentCashier?'var(--cream)':'var(--panel)'};" onclick="selectCashier('${name.replace(/'/g,"\\'")}')">
-          <span>${escapeHtml(name)}</span>${name===currentCashier?'<span>✓</span>':''}
-        </button>
-      `).join('')}
-    </div>
-    <div class="add-item-row" style="margin-top:14px;">
-      <input type="text" id="newStaffName" placeholder="Add staff name">
-      <button class="small-btn" onclick="addStaff()">Add</button>
-    </div>
-  `;
-  document.getElementById('cashierOverlay').classList.add('show');
-}
-function selectCashier(name){ currentCashier = name; saveCashier(); renderCashier(); closeModal('cashierOverlay'); }
-function addStaff(){
-  const el = document.getElementById('newStaffName');
-  const name = el.value.trim();
-  if(!name) return;
-  if(!staffList.includes(name)) staffList.push(name);
-  saveStaff();
-  currentCashier = name; saveCashier(); renderCashier();
-  closeModal('cashierOverlay');
-}
-
-/* ================= SHIFT ================= */
-function renderShiftBtn(){
-  const btn = document.getElementById('shiftBtn');
-  btn.classList.toggle('shift-on', !!shift);
-  btn.innerHTML = shift ? `🕐 ${escapeHtml(shift.cashier)}` : `🕐 Shift`;
-}
-function openShift(){
-  const body = document.getElementById('shiftBody');
-  if(!shift){
-    body.innerHTML = `
-      <div class="shift-form">
-        <label>Cashier</label>
-        <select id="shiftCashier">${staffList.map(n=>`<option value="${escapeHtml(n)}" ${n===currentCashier?'selected':''}>${escapeHtml(n)}</option>`).join('')}</select>
-        <label>Starting cash in the till</label>
-        <input type="number" id="shiftStartCash" placeholder="0.00">
-        <button class="btn btn-charge" style="margin-top:6px;" onclick="startShift()">Start Shift</button>
-      </div>
-    `;
-  }else{
-    const cashSales = salesLog.filter(o => !o.voided && o.paymentMethod==='Cash' && new Date(o.time) >= new Date(shift.startTime)).reduce((s,o)=>s+o.total,0);
-    const nonCashSales = salesLog.filter(o => !o.voided && o.paymentMethod!=='Cash' && new Date(o.time) >= new Date(shift.startTime)).reduce((s,o)=>s+o.total,0);
-    const expected = shift.startingCash + cashSales;
-    body.innerHTML = `
-      <div class="shift-badge">
-        Cashier: <strong>${escapeHtml(shift.cashier)}</strong><br>
-        Started: ${new Date(shift.startTime).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}
-      </div>
-      <div class="shift-summary-row"><span>Starting cash</span><span>${peso(shift.startingCash)}</span></div>
-      <div class="shift-summary-row"><span>Cash sales this shift</span><span>${peso(cashSales)}</span></div>
-      <div class="shift-summary-row"><span>Non-cash sales (GCash/Maya)</span><span>${peso(nonCashSales)}</span></div>
-      <div class="shift-summary-row total"><span>Expected cash in till</span><span>${peso(expected)}</span></div>
-      <div class="shift-form" style="margin-top:16px;">
-        <label>Counted cash (end of shift)</label>
-        <input type="number" id="shiftCountedCash" placeholder="0.00">
-        <button class="btn btn-charge" style="margin-top:6px;" onclick="requirePin(endShift)">🔒 End Shift</button>
-      </div>
-    `;
-  }
-  document.getElementById('shiftOverlay').classList.add('show');
-}
-function startShift(){
-  const cashier = document.getElementById('shiftCashier').value;
-  const startCash = parseFloat(document.getElementById('shiftStartCash').value) || 0;
-  shift = {cashier, startingCash: startCash, startTime: new Date().toISOString()};
-  currentCashier = cashier;
-  saveShift(); saveCashier(); renderCashier(); renderShiftBtn();
-  closeModal('shiftOverlay');
-  showToast("Shift started");
-}
-function endShift(){
-  const countedEl = document.getElementById('shiftCountedCash');
-  const counted = parseFloat(countedEl.value);
-  if(isNaN(counted)){ showToast("Enter the counted cash amount"); return; }
-  const cashSales = salesLog.filter(o => !o.voided && o.paymentMethod==='Cash' && new Date(o.time) >= new Date(shift.startTime)).reduce((s,o)=>s+o.total,0);
-  const expected = shift.startingCash + cashSales;
-  const overShort = counted - expected;
-  showToast(overShort===0 ? "Till balanced ✓" : (overShort>0 ? `Over by ${peso(overShort)}` : `Short by ${peso(Math.abs(overShort))}`));
-  shift = null;
-  saveShift(); renderShiftBtn();
-  closeModal('shiftOverlay');
-}
 
 /* ================= MENU EDITOR ================= */
 function openSettings(){ renderMenuEditor(); document.getElementById('settingsOverlay').classList.add('show'); }
@@ -1111,7 +1004,7 @@ function renderHistory(){
       const d = new Date(o.time);
       const linesStr = o.lines.map(l=>`${l.qty}× ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}`).join(', ');
       return `<div class="hist-item ${o.voided?'voided':''}">
-        <div class="hist-top"><span>#${o.orderNo}${o.table ? ` · Table ${escapeHtml(o.table)}` : ''} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span><span>${escapeHtml(o.cashier||'')}</span></div>
+        <div class="hist-top"><span>#${o.orderNo}${o.table ? ` · Table ${escapeHtml(o.table)}` : ''} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="hist-tags">
           <span class="hist-tag">${escapeHtml(o.orderType||'Dine-in')}</span>
           <span class="hist-tag">${escapeHtml(o.paymentMethod||'Cash')}</span>
@@ -1228,20 +1121,20 @@ function downloadCSV(filename, rows){
 function exportOrdersCSV(){
   const orders = getRangeOrders();
   if(orders.length===0){ showToast("No orders in that range"); return; }
-  const rows = [["Order #","Table/Priority #","Date","Time","Cashier","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
+  const rows = [["Order #","Table/Priority #","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
   orders.forEach(o=>{
     const d = new Date(o.time);
     const itemsStr = o.lines.map(l=>`${l.qty}x ${l.name}${l.note?` (${l.note})`:''}`).join('; ');
     rows.push([
       o.orderNo, o.table||'', d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-      o.cashier||'', o.orderType||'', o.paymentMethod||'',
+      o.orderType||'', o.paymentMethod||'',
       itemsStr, (o.subtotal||o.total).toFixed(2), (o.discount||0).toFixed(2), o.total.toFixed(2),
       o.cash.toFixed(2), Math.max(o.change,0).toFixed(2)
     ]);
   });
   const totalSales = orders.reduce((s,o)=>s+o.total,0);
   rows.push([]);
-  rows.push(["", "", "", "", "", "", "", "TOTAL", "", "", totalSales.toFixed(2), "", ""]);
+  rows.push(["", "", "", "", "", "", "TOTAL", "", "", totalSales.toFixed(2), "", ""]);
   downloadCSV(`balutan-orders-${dateStamp()}.csv`, rows);
   showToast("Orders CSV downloaded");
 }
