@@ -1,0 +1,24 @@
+{
+  "name": "Balutan ni Arnel POS",
+  "short_name": "Balutan POS",
+  "description": "Point of sale app for Balutan ni Arnel — take dine-in orders by table, add items as customers order more, and settle the bill after they finish eating.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#1C1108",
+  "theme_color": "#1C1108",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
