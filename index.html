@@ -250,6 +250,7 @@
   .hist-tags{display:flex; gap:5px; margin-top:4px; flex-wrap:wrap;}
   .hist-tag{background:var(--cream); border-radius:5px; padding:2px 7px; font-size:10px; font-weight:700; color:var(--muted2);}
   .hist-lines{font-size:13px; margin:6px 0; line-height:1.5;}
+  .hist-cash{font-family:var(--mono); font-size:11.5px; color:var(--muted2); margin-bottom:6px;}
   .hist-bottom{display:flex; justify-content:space-between; align-items:center;}
   .hist-total{font-weight:800; font-family:var(--mono);}
   .void-btn{background:none; border:none; color:var(--chili); font-size:11px; font-weight:700; text-decoration:underline;}
@@ -1011,6 +1012,7 @@ function renderHistory(){
           ${o.discount>0 ? `<span class="hist-tag">-${peso(o.discount)} disc</span>` : ''}
         </div>
         <div class="hist-lines">${linesStr}</div>
+        ${(!o.voided && o.paymentMethod==='Cash') ? `<div class="hist-cash">Cash ${peso(o.cash)} · Change ${peso(Math.max(o.change,0))}</div>` : ''}
         <div class="hist-bottom">
           ${o.voided ? '<span class="voided-tag">Voided</span>' : `<button class="void-btn" onclick="requirePin(function(){voidOrder('${o.id}')})">🔒 Void</button>`}
           <div class="hist-total">${peso(o.total)}</div>
