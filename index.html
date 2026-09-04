@@ -14,282 +14,358 @@
 <style>
   :root{
     --broth:#1C1108;
+    --broth-2:#2C1A0E;
     --cream:#FFF8E9;
     --panel:#FFFFFF;
+    --panel-soft:#FFFCF5;
     --line:#EEDFC0;
+    --line-soft:#F4E9CE;
     --chili:#C41411;
     --chili-dark:#8F0E0C;
+    --chili-glow:rgba(196,20,17,0.28);
     --yolk:#FFC72C;
+    --yolk-dark:#E0A400;
     --herb:#12872B;
     --herb-dark:#0C651F;
     --muted2:#9C8E76;
-    --radius:14px;
+    --muted3:#C7B78F;
+    --radius:16px;
+    --radius-lg:22px;
+    --radius-sm:10px;
+    --shadow-sm:0 2px 6px rgba(43,27,18,0.07);
+    --shadow-md:0 8px 22px rgba(43,27,18,0.12);
+    --shadow-lg:0 18px 44px rgba(28,17,8,0.28);
     --disp: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, "SF Mono", "Cascadia Code", "Courier New", monospace;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{
-    margin:0; background:var(--cream); color:var(--broth);
+    margin:0; color:var(--broth);
     font-family:var(--disp);
     display:flex; flex-direction:column;
     overflow:hidden;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(255,199,44,0.10), transparent 45%),
+      radial-gradient(circle at 0% 100%, rgba(196,20,17,0.06), transparent 40%),
+      var(--cream);
+    -webkit-font-smoothing:antialiased;
   }
   button{font-family:inherit; cursor:pointer;}
-  ::-webkit-scrollbar{width:8px; height:8px;}
-  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+  button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:2px solid var(--chili); outline-offset:2px;
+  }
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--muted3); border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted2);}
+  ::-webkit-scrollbar-track{background:transparent;}
 
   /* ---------- HEADER ---------- */
   header{
     display:flex; align-items:center; justify-content:space-between;
-    padding:12px 22px; background:var(--broth); color:var(--cream);
+    padding:13px 24px; color:var(--cream);
+    background:linear-gradient(155deg, var(--broth-2), var(--broth) 65%);
     flex-shrink:0; z-index:20; gap:10px; flex-wrap:wrap;
+    box-shadow:0 4px 16px rgba(0,0,0,0.28);
+    position:relative;
   }
-  .brand{display:flex; align-items:center; gap:12px;}
+  header::after{
+    content:""; position:absolute; left:0; right:0; bottom:-3px; height:3px;
+    background:linear-gradient(90deg, var(--chili), var(--yolk), var(--herb));
+    opacity:0.9;
+  }
+  .brand{display:flex; align-items:center; gap:13px;}
   .brand-logo{
     width:46px; height:46px; border-radius:50%; object-fit:cover; flex-shrink:0;
-    border:2px solid var(--yolk); box-shadow:0 0 0 2px var(--chili);
+    border:2px solid var(--yolk); box-shadow:0 0 0 2px var(--chili), var(--shadow-sm);
   }
   .brand-text h1{margin:0; font-size:19px; font-weight:900; letter-spacing:0.3px; text-transform:uppercase;}
-  .brand-text p{margin:0; font-size:10.5px; color:var(--yolk); letter-spacing:1.5px; text-transform:uppercase;}
-  .head-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .brand-text p{margin:0; font-size:10.5px; color:var(--yolk); letter-spacing:1.5px; text-transform:uppercase; font-weight:600;}
+  .head-actions{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
   .head-btn{
     background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18);
-    color:var(--cream); border-radius:10px; padding:9px 13px; font-size:12.5px; font-weight:600;
+    color:var(--cream); border-radius:11px; padding:9px 14px; font-size:12.5px; font-weight:700;
     display:flex; align-items:center; gap:6px; white-space:nowrap;
+    transition:background .15s ease, transform .12s ease, border-color .15s ease;
+    backdrop-filter:blur(4px);
   }
-  .head-btn:hover{background:rgba(255,255,255,0.16);}
-  .clock{font-family:var(--mono); font-size:12.5px; color:var(--muted2); margin-right:2px; display:none;}
+  .head-btn:hover{background:rgba(255,255,255,0.17); border-color:rgba(255,255,255,0.3);}
+  .head-btn:active{transform:scale(0.95);}
+  .clock{font-family:var(--mono); font-size:12.5px; color:var(--muted3); margin-right:2px; display:none; letter-spacing:.3px;}
   @media(min-width:900px){.clock{display:block;}}
   .lock-badge{font-size:10px; opacity:.75; margin-left:2px;}
 
   /* ---------- LAYOUT ---------- */
   .app{flex:1; display:flex; min-height:0;}
   .menu-side{flex:1; display:flex; flex-direction:column; min-width:0;}
-  .tabs{display:flex; gap:8px; padding:14px 20px 0; flex-shrink:0; overflow-x:auto;}
+  .tabs{display:flex; gap:8px; padding:16px 20px 0; flex-shrink:0; overflow-x:auto;}
   .tab{
-    border:1.5px solid var(--line); background:var(--panel); padding:9px 16px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--panel); padding:9px 17px; border-radius:999px;
     font-weight:700; font-size:13px; color:var(--muted2); white-space:nowrap;
+    transition:all .15s ease; box-shadow:var(--shadow-sm);
   }
-  .tab.active{background:var(--chili); color:#fff; border-color:var(--chili);}
+  .tab:hover{border-color:var(--chili); color:var(--chili-dark);}
+  .tab.active{background:var(--chili); color:#fff; border-color:var(--chili); box-shadow:0 4px 12px var(--chili-glow);}
 
-  .grid-wrap{flex:1; overflow-y:auto; padding:16px 20px 90px;}
-  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px;}
+  .grid-wrap{flex:1; overflow-y:auto; padding:16px 20px 90px; scroll-behavior:smooth;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(152px,1fr)); gap:13px;}
   .item-card{
     background:var(--panel); border:1.5px solid var(--line); border-radius:var(--radius);
-    padding:14px; text-align:left; display:flex; flex-direction:column; gap:10px;
-    min-height:96px; position:relative; transition:transform .08s ease, box-shadow .08s ease;
+    padding:15px; text-align:left; display:flex; flex-direction:column; gap:10px;
+    min-height:98px; position:relative; transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    box-shadow:var(--shadow-sm);
   }
-  .item-card:active{transform:scale(0.96);}
-  .item-card:hover{box-shadow:0 3px 0 var(--line);}
+  .item-card:hover{box-shadow:var(--shadow-md); border-color:var(--muted3); transform:translateY(-2px);}
+  .item-card:active{transform:scale(0.96) translateY(0);}
   .item-card.soldout{opacity:0.45; pointer-events:none;}
   .item-name{font-weight:800; font-size:14.5px; line-height:1.25;}
   .item-note{font-size:11px; color:var(--muted2); line-height:1.3; margin-top:-4px;}
   .item-price{font-family:var(--mono); font-weight:700; color:var(--chili); font-size:14px;}
   .item-card .plus{
-    position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%;
+    position:absolute; top:10px; right:10px; width:23px; height:23px; border-radius:50%;
     background:var(--herb); color:#fff; display:flex; align-items:center; justify-content:center;
-    font-size:15px; font-weight:900; line-height:1;
+    font-size:15px; font-weight:900; line-height:1; box-shadow:0 3px 8px rgba(18,135,43,0.4);
+    transition:transform .12s ease;
   }
+  .item-card:hover .plus{transform:scale(1.12) rotate(90deg);}
   .soldout-badge{
     position:absolute; top:10px; right:10px; background:var(--chili); color:#fff; font-size:9px;
-    font-weight:800; padding:3px 7px; border-radius:5px; letter-spacing:.5px;
+    font-weight:800; padding:3px 7px; border-radius:6px; letter-spacing:.5px;
   }
   .empty-menu{padding:40px; text-align:center; color:var(--muted2); font-size:14px;}
 
   /* ---------- ORDER TICKET ---------- */
   .ticket-col{
-    width:350px; flex-shrink:0; background:#F3E9D4; border-left:2px dashed var(--line);
+    width:360px; flex-shrink:0;
+    background:linear-gradient(180deg, #F6ECD8, #F0E3C7);
+    border-left:2px dashed var(--line);
     display:flex; flex-direction:column; min-height:0;
   }
   .ticket-tabs{display:flex; gap:6px; padding:12px 12px 0; overflow-x:auto; flex-shrink:0;}
   .tticket-tab{
-    background:var(--panel); border:1.5px solid var(--line); border-radius:8px; padding:7px 10px;
+    background:var(--panel); border:1.5px solid var(--line); border-radius:9px; padding:7px 11px;
     font-size:11.5px; font-weight:700; color:var(--muted2); white-space:nowrap; display:flex; align-items:center; gap:6px;
+    transition:all .15s ease; box-shadow:var(--shadow-sm);
   }
-  .tticket-tab.active{background:var(--broth); color:var(--cream); border-color:var(--broth);}
-  .tticket-tab .cnt{background:var(--chili); color:#fff; border-radius:999px; font-size:9.5px; padding:1px 5px;}
+  .tticket-tab.active{background:var(--broth); color:var(--cream); border-color:var(--broth); box-shadow:var(--shadow-md);}
+  .tticket-tab .cnt{background:var(--chili); color:#fff; border-radius:999px; font-size:9.5px; padding:1px 5px; font-weight:800;}
   .tticket-tab.active .cnt{background:var(--yolk); color:var(--broth);}
   .ticket-tab-close{font-size:12px; margin-left:2px; opacity:.7;}
   .ticket-tab-add{
-    background:var(--herb); color:#fff; border:none; border-radius:8px; padding:7px 11px; font-size:14px; font-weight:900;
+    background:var(--herb); color:#fff; border:none; border-radius:9px; padding:7px 12px; font-size:14px; font-weight:900;
+    box-shadow:0 3px 8px rgba(18,135,43,0.35); transition:transform .12s ease;
   }
+  .ticket-tab-add:active{transform:scale(0.92);}
   .ticket-tab-clear{
-    background:var(--panel); color:var(--chili); border:1.5px solid var(--chili); border-radius:8px; padding:7px 10px; font-size:13px;
+    background:var(--panel); color:var(--chili); border:1.5px solid var(--chili); border-radius:9px; padding:7px 10px; font-size:13px;
+    transition:background .15s ease;
   }
+  .ticket-tab-clear:hover{background:#FCEBEA;}
 
   .ticket{
-    margin:12px 16px 16px; background:var(--panel); flex:1; display:flex; flex-direction:column;
-    min-height:0; box-shadow:0 6px 18px rgba(43,27,18,0.10);
+    margin:12px 16px 16px; background:var(--panel-soft); flex:1; display:flex; flex-direction:column;
+    min-height:0; box-shadow:var(--shadow-lg);
+    background-image:repeating-linear-gradient(180deg, rgba(28,17,8,0.015) 0px, rgba(28,17,8,0.015) 1px, transparent 1px, transparent 34px);
     clip-path: polygon(
       0% 8px, 3% 0%, 6% 8px, 9% 0%, 12% 8px, 15% 0%, 18% 8px, 21% 0%, 24% 8px, 27% 0%, 30% 8px, 33% 0%, 36% 8px, 39% 0%, 42% 8px, 45% 0%, 48% 8px, 51% 0%, 54% 8px, 57% 0%, 60% 8px, 63% 0%, 66% 8px, 69% 0%, 72% 8px, 75% 0%, 78% 8px, 81% 0%, 84% 8px, 87% 0%, 90% 8px, 93% 0%, 96% 8px, 100% 0%,
       100% calc(100% - 8px), 97% 100%, 94% calc(100% - 8px), 91% 100%, 88% calc(100% - 8px), 85% 100%, 82% calc(100% - 8px), 79% 100%, 76% calc(100% - 8px), 73% 100%, 70% calc(100% - 8px), 67% 100%, 64% calc(100% - 8px), 61% 100%, 58% calc(100% - 8px), 55% 100%, 52% calc(100% - 8px), 49% 100%, 46% calc(100% - 8px), 43% 100%, 40% calc(100% - 8px), 37% 100%, 34% calc(100% - 8px), 31% 100%, 28% calc(100% - 8px), 25% 100%, 22% calc(100% - 8px), 19% 100%, 16% calc(100% - 8px), 13% 100%, 10% calc(100% - 8px), 7% 100%, 4% calc(100% - 8px), 0% 100%
     );
   }
-  .ticket-head{padding:16px 20px 10px; text-align:center; flex-shrink:0; border-bottom:1px dashed var(--line);}
-  .ticket-head .name{font-weight:900; letter-spacing:1px; text-transform:uppercase; font-size:14px;}
+  .ticket-head{padding:18px 20px 10px; text-align:center; flex-shrink:0; border-bottom:1px dashed var(--line);}
+  .ticket-head .name{font-weight:900; letter-spacing:1.2px; text-transform:uppercase; font-size:14px;}
   .ticket-head .sub{font-family:var(--mono); font-size:11px; color:var(--muted2); margin-top:4px;}
-  .table-row{display:flex; justify-content:center; margin-bottom:8px;}
+  .table-row{display:flex; justify-content:center; margin-bottom:10px;}
   .table-input{
     width:100%; max-width:260px; text-align:center; font-family:var(--disp); font-weight:800;
     font-size:15px; letter-spacing:.5px; color:var(--broth); background:var(--yolk);
-    border:1.5px solid var(--broth); border-radius:10px; padding:9px 10px;
+    border:1.5px solid var(--broth); border-radius:11px; padding:10px 10px;
+    box-shadow:var(--shadow-sm); transition:box-shadow .15s ease;
   }
   .table-input::placeholder{color:#6b5a2a; font-weight:700;}
-  .table-input:focus{outline:2px solid var(--chili); outline-offset:1px;}
-  .ticket-hint{font-size:10.5px; color:var(--muted2); text-align:center; margin-top:8px; line-height:1.35;}
+  .table-input:focus{outline:2px solid var(--chili); outline-offset:1px; box-shadow:var(--shadow-md);}
+  .table-input.readonly{cursor:default; user-select:none;}
+  .ticket-hint{font-size:10.5px; color:var(--muted2); text-align:center; margin-top:8px; line-height:1.4;}
   .pill-group{display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap;}
   .pill{
     border:1.5px solid var(--line); background:var(--cream); color:var(--muted2); border-radius:999px;
-    padding:5px 10px; font-size:10.5px; font-weight:700;
+    padding:5px 11px; font-size:10.5px; font-weight:700; transition:all .15s ease;
   }
-  .pill.active{background:var(--herb); color:#fff; border-color:var(--herb);}
-  .pill.active.pay{background:var(--yolk); border-color:var(--yolk); color:var(--broth);}
+  .pill.active{background:var(--herb); color:#fff; border-color:var(--herb); box-shadow:0 2px 6px rgba(18,135,43,0.35);}
+  .pill.active.pay{background:var(--yolk); border-color:var(--yolk); color:var(--broth); box-shadow:0 2px 6px rgba(255,199,44,0.45);}
 
   .ticket-lines{flex:1; overflow-y:auto; padding:12px 20px; font-family:var(--mono); font-size:12.5px;}
-  .tline{padding:8px 0; border-bottom:1px dotted var(--line);}
+  .tline{padding:9px 0; border-bottom:1px dotted var(--line); transition:background .15s ease;}
   .tline:last-child{border-bottom:none;}
   .tline-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .tl-name{flex:1; line-height:1.4;}
-  .tl-qtybox{display:flex; align-items:center; gap:6px; margin-top:4px;}
+  .tl-qtybox{display:flex; align-items:center; gap:7px; margin-top:5px;}
   .qbtn{
-    width:18px; height:18px; border:1px solid var(--line); background:var(--cream); border-radius:4px;
+    width:20px; height:20px; border:1px solid var(--line); background:var(--panel); border-radius:6px;
     font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
+    box-shadow:var(--shadow-sm); transition:transform .1s ease, background .15s ease;
   }
+  .qbtn:hover{background:var(--yolk);}
+  .qbtn:active{transform:scale(0.88);}
   .tl-amt{font-weight:700; white-space:nowrap;}
   .tl-remove, .tl-note-btn{color:var(--chili); font-size:10.5px; text-decoration:underline; background:none; border:none; padding:0; margin-left:6px; font-family:var(--disp);}
   .tl-note-btn{color:var(--herb-dark);}
   .tl-note{font-size:11px; color:var(--muted2); font-style:italic; margin-top:3px; font-family:var(--disp);}
-  .ticket-empty{padding:36px 10px; text-align:center; color:var(--muted2); font-size:13px; font-family:var(--disp);}
-  .ticket-empty div:first-child{font-size:26px; margin-bottom:8px;}
+  .ticket-empty{padding:38px 10px; text-align:center; color:var(--muted2); font-size:13px; font-family:var(--disp);}
+  .ticket-empty div:first-child{font-size:28px; margin-bottom:8px;}
 
-  .ticket-totals{padding:10px 20px; font-family:var(--mono); font-size:13px; border-top:1px dashed var(--line); flex-shrink:0;}
+  .ticket-totals{padding:12px 20px; font-family:var(--mono); font-size:13px; border-top:1px dashed var(--line); flex-shrink:0;}
   .trow{display:flex; justify-content:space-between; padding:3px 0;}
-  .trow.grand{font-size:16px; font-weight:900; border-top:1px dashed var(--line); margin-top:6px; padding-top:8px;}
+  .trow.grand{font-size:17px; font-weight:900; border-top:1px dashed var(--line); margin-top:6px; padding-top:9px; color:var(--broth);}
   .trow.disc{color:var(--chili);}
   .discount-toggle{background:none; border:none; color:var(--herb-dark); font-size:11.5px; font-weight:700; text-decoration:underline; padding:4px 0; font-family:var(--disp);}
   .discount-row{display:none; gap:6px; margin:6px 0; align-items:center; font-family:var(--disp);}
   .discount-row.show{display:flex;}
-  .discount-row select{border:1px solid var(--line); border-radius:7px; padding:6px 7px; font-size:11.5px; background:var(--cream); flex-shrink:0;}
-  .discount-row input{width:70px; border:1px solid var(--line); border-radius:7px; padding:6px 7px; font-size:12px; font-family:var(--mono); background:var(--cream);}
-  .cash-row{display:flex; gap:8px; align-items:center; margin-top:8px;}
+  .discount-row select{border:1px solid var(--line); border-radius:8px; padding:6px 7px; font-size:11.5px; background:var(--cream); flex-shrink:0;}
+  .discount-row input{width:70px; border:1px solid var(--line); border-radius:8px; padding:6px 7px; font-size:12px; font-family:var(--mono); background:var(--cream);}
+  .cash-row{display:flex; gap:8px; align-items:center; margin-top:9px;}
   .cash-row input{
-    flex:1; font-family:var(--mono); font-size:13px; border:1.5px solid var(--line); border-radius:8px;
-    padding:8px 10px; background:var(--cream); color:var(--broth);
+    flex:1; font-family:var(--mono); font-size:13px; border:1.5px solid var(--line); border-radius:9px;
+    padding:9px 10px; background:var(--cream); color:var(--broth); transition:border-color .15s ease;
   }
+  .cash-row input:focus{border-color:var(--chili);}
   .change-line{font-weight:800; color:var(--herb-dark);}
   .change-line.short{color:var(--chili);}
 
-  .ticket-actions{padding:12px 20px 16px; display:flex; flex-direction:column; gap:8px; flex-shrink:0;}
-  .btn{border:none; border-radius:10px; padding:13px; font-weight:800; font-size:14px; letter-spacing:.3px;}
-  .btn-charge{background:var(--chili); color:#fff;}
-  .btn-charge:disabled{background:#D8C9AE; color:#fff; cursor:not-allowed;}
+  .ticket-actions{padding:12px 20px 18px; display:flex; flex-direction:column; gap:9px; flex-shrink:0;}
+  .btn{border:none; border-radius:12px; padding:14px; font-weight:800; font-size:14px; letter-spacing:.3px; transition:transform .1s ease, box-shadow .15s ease, opacity .15s ease;}
+  .btn-charge{background:linear-gradient(155deg, #D6241F, var(--chili-dark)); color:#fff; box-shadow:0 6px 16px var(--chili-glow);}
+  .btn-charge:not(:disabled):hover{box-shadow:0 8px 20px var(--chili-glow); transform:translateY(-1px);}
+  .btn-charge:not(:disabled):active{transform:translateY(0) scale(0.98);}
+  .btn-charge:disabled{background:#D8C9AE; color:#fff; cursor:not-allowed; box-shadow:none;}
   .btn-ghost{background:transparent; color:var(--muted2); font-size:12px; font-weight:700; padding:4px;}
+  .btn-ghost:hover{color:var(--chili);}
 
   .mobile-cart-btn{display:none;}
   .ticket-close-mobile{display:none;}
   @media(max-width:820px){
     .ticket-close-mobile{
       display:flex; align-items:center; justify-content:center; gap:6px;
-      background:var(--broth); color:var(--cream); border:none; border-radius:10px;
-      padding:10px; margin:12px 16px 0; font-size:12.5px; font-weight:700;
+      background:var(--broth); color:var(--cream); border:none; border-radius:11px;
+      padding:11px; margin:12px 16px 0; font-size:12.5px; font-weight:700;
     }
     .ticket-col{
       position:fixed; right:0; top:0; bottom:0; width:88vw; max-width:380px;
-      transform:translateX(100%); transition:transform .22s ease; z-index:40;
-      box-shadow:-8px 0 24px rgba(0,0,0,0.25);
+      transform:translateX(100%); transition:transform .25s cubic-bezier(.25,.8,.4,1); z-index:40;
+      box-shadow:-10px 0 30px rgba(0,0,0,0.3);
     }
     .ticket-col.open{transform:translateX(0);}
     .mobile-cart-btn{
       display:flex; position:fixed; right:16px; bottom:16px; z-index:30;
-      background:var(--chili); color:#fff; border:none; border-radius:999px; padding:14px 18px;
-      font-weight:800; font-size:13px; align-items:center; gap:8px; box-shadow:0 6px 16px rgba(193,57,43,0.4);
+      background:linear-gradient(155deg, #D6241F, var(--chili-dark)); color:#fff; border:none; border-radius:999px; padding:15px 20px;
+      font-weight:800; font-size:13px; align-items:center; gap:8px; box-shadow:0 10px 24px rgba(193,57,43,0.45);
+      transition:transform .12s ease;
     }
-    .grid-wrap{padding-bottom:110px;}
+    .mobile-cart-btn:active{transform:scale(0.95);}
+    .grid-wrap{padding-bottom:112px;}
   }
 
   /* ---------- MODALS ---------- */
-  .overlay{position:fixed; inset:0; background:rgba(43,27,18,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
-  .overlay.show{display:flex;}
-  .modal{background:var(--panel); border-radius:16px; width:100%; max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden;}
-  .modal-head{display:flex; justify-content:space-between; align-items:center; padding:18px 20px; border-bottom:1px solid var(--line); flex-shrink:0;}
+  .overlay{position:fixed; inset:0; background:rgba(28,17,8,0.6); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .overlay.show{display:flex; animation:fadeIn .18s ease;}
+  @keyframes fadeIn{from{opacity:0;} to{opacity:1;}}
+  .modal{
+    background:var(--panel); border-radius:var(--radius-lg); width:100%; max-width:580px; max-height:85vh;
+    display:flex; flex-direction:column; overflow:hidden; box-shadow:var(--shadow-lg);
+    animation:modalPop .2s cubic-bezier(.25,.8,.4,1);
+  }
+  @keyframes modalPop{from{opacity:0; transform:translateY(10px) scale(0.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+  .modal-head{
+    display:flex; justify-content:space-between; align-items:center; padding:18px 22px;
+    border-bottom:1px solid var(--line); flex-shrink:0; background:var(--panel-soft);
+  }
   .btn-refresh{
     background:var(--yolk); color:var(--broth); border:1.5px solid var(--broth);
-    border-radius:8px; padding:7px 12px; font-family:var(--disp); font-weight:800;
+    border-radius:9px; padding:7px 12px; font-family:var(--disp); font-weight:800;
     font-size:12.5px; cursor:pointer; transition:transform .15s;
   }
   .btn-refresh:active{transform:scale(.94);}
   .btn-refresh.spinning{animation:spin .6s linear;}
   @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-  .modal-head h2{margin:0; font-size:16px; font-weight:900;}
-  .modal-close{background:none; border:none; font-size:20px; color:var(--muted2); line-height:1;}
-  .modal-body{padding:18px 20px; overflow-y:auto;}
+  .modal-head h2{margin:0; font-size:16.5px; font-weight:900; letter-spacing:.2px;}
+  .modal-close{background:none; border:none; font-size:20px; color:var(--muted2); line-height:1; transition:color .15s ease;}
+  .modal-close:hover{color:var(--chili);}
+  .modal-body{padding:20px 22px;overflow-y:auto;}
 
-  .menu-row{display:flex; gap:6px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .menu-row{display:flex; gap:6px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
   .menu-row input[type=text], .menu-row input[type=number]{
-    border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:13px; font-family:var(--disp); background:var(--cream);
+    border:1px solid var(--line); border-radius:9px; padding:7px 9px; font-size:13px; font-family:var(--disp); background:var(--cream);
   }
   .menu-row .m-name{flex:1; min-width:110px;}
   .menu-row .m-note{flex:1; min-width:110px; font-size:12px;}
   .menu-row .m-price{width:72px; font-family:var(--mono);}
-  .menu-row .m-del{background:none; border:none; color:var(--chili); font-size:18px; padding:2px 6px;}
+  .menu-row .m-del{background:none; border:none; color:var(--chili); font-size:18px; padding:2px 6px; transition:transform .12s ease;}
+  .menu-row .m-del:hover{transform:scale(1.15);}
   .m-soldout{display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--muted2); white-space:nowrap;}
-  .cat-block{margin-bottom:18px;}
-  .cat-block h3{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted2); margin:0 0 6px;}
+  .cat-block{margin-bottom:20px;}
+  .cat-block h3{font-size:12px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted2); margin:0 0 7px; font-weight:800;}
   .add-item-row{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
   .add-item-row input{flex:1; min-width:90px;}
-  .small-btn{background:var(--herb); color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:12px; font-weight:700;}
+  .small-btn{background:var(--herb); color:#fff; border:none; border-radius:9px; padding:8px 13px; font-size:12px; font-weight:700; transition:transform .12s ease;}
+  .small-btn:active{transform:scale(0.94);}
   .small-btn.alt{background:var(--broth);}
   .cat-add{display:flex; gap:8px; margin-top:16px; padding-top:12px; border-top:1px dashed var(--line);}
   .cat-add input{flex:1;}
 
-  .hist-item{padding:12px 0; border-bottom:1px solid var(--line);}
+  .hist-item{padding:13px 0; border-bottom:1px solid var(--line);}
   .hist-item.voided{opacity:0.5;}
   .hist-item:last-child{border-bottom:none;}
   .hist-top{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11.5px; color:var(--muted2); flex-wrap:wrap; gap:4px;}
   .hist-tags{display:flex; gap:5px; margin-top:4px; flex-wrap:wrap;}
-  .hist-tag{background:var(--cream); border-radius:5px; padding:2px 7px; font-size:10px; font-weight:700; color:var(--muted2);}
-  .hist-lines{font-size:13px; margin:6px 0; line-height:1.5;}
+  .hist-tag{background:var(--cream); border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; color:var(--muted2);}
+  .hist-lines{font-size:13px; margin:7px 0; line-height:1.5;}
   .hist-cash{font-family:var(--mono); font-size:11.5px; color:var(--muted2); margin-bottom:6px;}
   .hist-bottom{display:flex; justify-content:space-between; align-items:center;}
   .hist-total{font-weight:800; font-family:var(--mono);}
   .void-btn{background:none; border:none; color:var(--chili); font-size:11px; font-weight:700; text-decoration:underline;}
   .voided-tag{color:var(--chili); font-weight:800; font-size:11px; text-transform:uppercase;}
-  .day-summary{background:var(--cream); border-radius:10px; padding:14px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;}
-  .day-summary .amt{font-family:var(--mono); font-size:20px; font-weight:900; color:var(--herb-dark);}
-  .day-summary .lbl{font-size:12px; color:var(--muted2); text-transform:uppercase; letter-spacing:.5px;}
+  .day-summary{
+    background:linear-gradient(155deg, #FFF3D6, var(--cream)); border:1px solid var(--line-soft);
+    border-radius:var(--radius); padding:15px 17px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;
+    box-shadow:var(--shadow-sm);
+  }
+  .day-summary .amt{font-family:var(--mono); font-size:21px; font-weight:900; color:var(--herb-dark);}
+  .day-summary .lbl{font-size:12px; color:var(--muted2); text-transform:uppercase; letter-spacing:.5px; font-weight:700;}
   .export-bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
-  .export-bar select{border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12.5px; background:var(--panel); color:var(--broth); font-family:var(--disp);}
+  .export-bar select{border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:12.5px; background:var(--panel); color:var(--broth); font-family:var(--disp);}
   .danger-link{color:var(--chili); background:none; border:none; font-size:12px; font-weight:700; text-decoration:underline;}
   .empty-hist{text-align:center; padding:40px 10px; color:var(--muted2); font-size:13px;}
 
-  .chart-wrap{margin-bottom:18px;}
-  .chart-title{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted2); margin-bottom:8px; font-weight:700;}
+  .chart-wrap{margin-bottom:20px;}
+  .chart-title{font-size:12px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted2); margin-bottom:9px; font-weight:800;}
 
   /* pin lock */
   .pin-modal{max-width:300px; text-align:center;}
-  .pin-modal .modal-body{padding:26px 22px 24px;}
-  .pin-icon{font-size:30px; margin-bottom:6px;}
+  .pin-modal .modal-body{padding:28px 24px 26px;}
+  .pin-icon{
+    font-size:26px; margin:0 auto 10px; width:52px; height:52px; border-radius:50%;
+    background:var(--cream); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);
+  }
   .pin-modal p{font-size:12.5px; color:var(--muted2); margin:0 0 16px;}
   #pinInput{
     width:100%; text-align:center; letter-spacing:10px; font-family:var(--mono); font-size:22px;
-    border:1.5px solid var(--line); border-radius:10px; padding:12px; background:var(--cream); color:var(--broth);
+    border:1.5px solid var(--line); border-radius:11px; padding:12px; background:var(--cream); color:var(--broth);
   }
   #pinInput.err{border-color:var(--chili); animation:shake .3s;}
   @keyframes shake{0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);}}
   .pin-error{color:var(--chili); font-size:12px; height:16px; margin-top:8px; font-weight:700;}
-  .pin-btns{display:flex; gap:8px; margin-top:14px;}
-  .pin-btns .btn-ghost{flex:1; border:1.5px solid var(--line); border-radius:10px;}
+  .pin-btns{display:flex; gap:8px; margin-top:16px;}
+  .pin-btns .btn-ghost{flex:1; border:1.5px solid var(--line); border-radius:11px;}
   .pin-btns .btn-charge{flex:1;}
   .pin-change-block{margin-top:22px; padding-top:16px; border-top:1px dashed var(--line);}
-  .pin-change-block h3{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted2); margin:0 0 10px;}
+  .pin-change-block h3{font-size:12px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted2); margin:0 0 10px; font-weight:800;}
   .pin-change-row{display:flex; gap:8px; flex-wrap:wrap;}
-  .pin-change-row input{border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:var(--mono); font-size:13px; background:var(--cream); width:110px;}
+  .pin-change-row input{border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-family:var(--mono); font-size:13px; background:var(--cream); width:110px;}
 
   .toast{
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--broth); color:var(--cream); padding:11px 20px; border-radius:999px;
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--broth); color:var(--cream); padding:12px 22px; border-radius:999px;
     font-size:13px; font-weight:600; z-index:200; opacity:0; transition:all .25s ease; pointer-events:none;
+    box-shadow:var(--shadow-lg);
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -317,7 +393,8 @@
   <div class="head-actions">
     <span class="clock" id="clock"></span>
     <button class="head-btn" onclick="openHistory()">🧾 Sales</button>
-    <button class="head-btn" onclick="requirePin(openSettings)">⚙️ Menu<span class="lock-badge">🔒</span></button>
+    <button class="head-btn" onclick="openSettings()">📋 Menu</button>
+    <button class="head-btn" onclick="requirePin(openAppSettings)">⚙️ Settings<span class="lock-badge">🔒</span></button>
   </div>
 </header>
 
@@ -333,11 +410,9 @@
     <div class="ticket">
       <div class="ticket-head">
         <div class="table-row">
-          <input type="text" id="tableInput" class="table-input" placeholder="Table / Priority #" oninput="onTableInput()" onblur="onTableInput()">
+          <div id="tableInput" class="table-input readonly" aria-live="polite">Order #—</div>
         </div>
-        <div class="name" id="orderTitle">Current Order</div>
         <div class="sub" id="orderMeta">—</div>
-        <div class="pill-group" id="orderTypePills"></div>
         <div class="pill-group" id="paymentPills"></div>
       </div>
       <div class="ticket-lines" id="ticketLines"></div>
@@ -376,6 +451,13 @@
   <div class="modal">
     <div class="modal-head"><h2>Edit Menu</h2><button class="modal-close" onclick="closeModal('settingsOverlay')">✕</button></div>
     <div class="modal-body" id="menuEditorBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="appSettingsOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Settings</h2><button class="modal-close" onclick="closeModal('appSettingsOverlay')">✕</button></div>
+    <div class="modal-body" id="appSettingsBody"></div>
   </div>
 </div>
 
@@ -472,7 +554,6 @@ const DEFAULT_MENU = {
     {id:"c1", name:"Balut Combo", price:35, note:"Balut + Atchara + Drink"}
   ]
 };
-const ORDER_TYPES = ["Dine-in","Take-out","Delivery"];
 const PAYMENT_METHODS = ["Cash","GCash","Maya"];
 
 let menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
@@ -492,7 +573,7 @@ function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth
 function newTicket(){
   return {
     id: uid('t'), orderNo: null, lines: [],
-    table: "", orderType: "Dine-in", paymentMethod: "Cash",
+    orderType: "Dine-in", paymentMethod: "Cash",
     discType: "none", discValue: 0, cashInput: ""
   };
 }
@@ -502,6 +583,12 @@ function ensureOrderNo(t){
   dayCounter.count += 1;
   saveDayCounter();
   t.orderNo = dayCounter.count;
+}
+/* Every open order tab gets its order number the moment it's created */
+function createTicketWithOrderNo(){
+  const t = newTicket();
+  ensureOrderNo(t);
+  return t;
 }
 function activeTicket(){ return tickets.find(t=>t.id===activeTicketId) || tickets[0]; }
 
@@ -519,14 +606,15 @@ async function loadData(){
     if(ot && ot.value){
       const parsed = JSON.parse(ot.value);
       if(parsed.tickets && parsed.tickets.length){
-        tickets = parsed.tickets.map(t => ({table:"", ...t}));
+        tickets = parsed.tickets;
+        tickets.forEach(t => { if(t.orderNo == null) ensureOrderNo(t); });
         activeTicketId = (parsed.activeTicketId && tickets.some(t=>t.id===parsed.activeTicketId))
           ? parsed.activeTicketId : tickets[0].id;
       }
     }
   }catch(e){}
   if(!tickets || tickets.length===0){
-    tickets = [newTicket()];
+    tickets = [createTicketWithOrderNo()];
     activeTicketId = tickets[0].id;
   }
 
@@ -585,18 +673,14 @@ function renderTicketTabs(){
   const wrap = document.getElementById('ticketTabs');
   wrap.innerHTML = tickets.map(t => `
     <button class="tticket-tab ${t.id===activeTicketId?'active':''}" onclick="switchTicket('${t.id}')">
-      ${t.table ? `🍽️ ${escapeHtml(t.table)}` : (t.orderNo ? `#${t.orderNo}` : 'New')} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
+      #${t.orderNo} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
       ${tickets.length>1 ? `<span class="ticket-tab-close" onclick="event.stopPropagation(); closeTicket('${t.id}')">✕</span>` : ''}
     </button>
   `).join('') + `<button class="ticket-tab-add" onclick="addTicket()">+</button>` + (tickets.length>1 ? `<button class="ticket-tab-clear" onclick="clearAllTickets()" title="Remove all order tabs">🗑</button>` : '');
   saveTickets();
 }
-function onTableInput(){
-  activeTicket().table = document.getElementById('tableInput').value;
-  renderTicketTabs();
-}
 function addTicket(){
-  const t = newTicket();
+  const t = createTicketWithOrderNo();
   tickets.push(t);
   activeTicketId = t.id;
   renderTicketTabs(); renderCart();
@@ -609,7 +693,7 @@ function clearAllTickets(){
     : `Remove all ${tickets.length} empty order tabs and start fresh?`;
   requirePin(function(){
     if(!confirm(msg)) return;
-    tickets = [newTicket()];
+    tickets = [createTicketWithOrderNo()];
     activeTicketId = tickets[0].id;
     renderTicketTabs(); renderCart();
     showToast("All order tabs cleared");
@@ -619,7 +703,7 @@ function closeTicket(id){
   const t = tickets.find(x=>x.id===id);
   if(t && t.lines.length>0 && !confirm("This order has items. Discard it?")) return;
   tickets = tickets.filter(x=>x.id!==id);
-  if(tickets.length===0){ tickets = [newTicket()]; }
+  if(tickets.length===0){ tickets = [createTicketWithOrderNo()]; }
   if(activeTicketId===id) activeTicketId = tickets[0].id;
   renderTicketTabs(); renderCart();
 }
@@ -660,7 +744,6 @@ function clearOrder(){
   renderCart(); renderTicketTabs();
 }
 
-function setOrderType(type){ activeTicket().orderType = type; renderCart(); }
 function setPaymentMethod(pm){ activeTicket().paymentMethod = pm; renderCart(); }
 function toggleDiscountRow(){
   const row = document.getElementById('discountRow');
@@ -687,13 +770,9 @@ function renderCart(){
   const wrap = document.getElementById('ticketLines');
   const count = t.lines.reduce((s,l)=>s+l.qty,0);
   document.getElementById('mobCount').textContent = tickets.reduce((s,tk)=>s+tk.lines.reduce((a,l)=>a+l.qty,0),0);
-  document.getElementById('tableInput').value = t.table || '';
-  document.getElementById('orderTitle').textContent = t.orderNo ? `Order #${t.orderNo}` : `New Order`;
+  document.getElementById('tableInput').textContent = `Order #${t.orderNo}`;
   document.getElementById('orderMeta').textContent = count>0 ? `${count} item${count>1?'s':''}` : "No items yet";
 
-  document.getElementById('orderTypePills').innerHTML = ORDER_TYPES.map(ot =>
-    `<button class="pill ${t.orderType===ot?'active':''}" onclick="setOrderType('${ot}')">${ot}</button>`
-  ).join('');
   document.getElementById('paymentPills').innerHTML = PAYMENT_METHODS.map(pm =>
     `<button class="pill ${t.paymentMethod===pm?'active pay':''}" onclick="setPaymentMethod('${pm}')">${pm}</button>`
   ).join('');
@@ -781,7 +860,7 @@ function completeOrder(){
   const change = (t.paymentMethod==='Cash') ? (cash - total) : 0;
 
   const order = {
-    id: uid('ord'), orderNo: t.orderNo, table: t.table || "", time: new Date().toISOString(),
+    id: uid('ord'), orderNo: t.orderNo, time: new Date().toISOString(),
     lines: t.lines.map(l=>({name:l.name, qty:l.qty, price:l.price, note:l.note||""})),
     orderType: t.orderType, paymentMethod: t.paymentMethod,
     subtotal, discount, total, cash, change, voided:false
@@ -791,7 +870,7 @@ function completeOrder(){
   syncOrder(order);
 
   tickets = tickets.filter(x=>x.id!==t.id);
-  if(tickets.length===0) tickets = [newTicket()];
+  if(tickets.length===0) tickets = [createTicketWithOrderNo()];
   activeTicketId = tickets[0].id;
   renderTicketTabs(); renderCart();
   showToast(`Order #${order.orderNo} completed ✓`);
@@ -815,7 +894,7 @@ function printReceipt(order){
     `<div class="pr-row"><span>${l.qty}x ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}</span><span>${peso(l.price*l.qty)}</span></div>`
   ).join('');
   document.getElementById('printArea').innerHTML = `
-    <div class="pr-center"><strong>BALUTAN NI ARNEL</strong><br>Order #${order.orderNo}${order.table ? ` — Table ${escapeHtml(order.table)}` : ''} — ${escapeHtml(order.orderType)}</div>
+    <div class="pr-center"><strong>BALUTAN NI ARNEL</strong><br>Order #${order.orderNo} — ${escapeHtml(order.orderType)}</div>
     <div>${d.toLocaleDateString()} ${d.toLocaleTimeString()}</div>
     <hr>
     ${lines}
@@ -862,7 +941,33 @@ document.addEventListener('keydown', (e)=>{
 
 /* ================= MENU EDITOR ================= */
 function openSettings(){ renderMenuEditor(); document.getElementById('settingsOverlay').classList.add('show'); }
+function openAppSettings(){ renderAppSettings(); document.getElementById('appSettingsOverlay').classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+function renderAppSettings(){
+  const body = document.getElementById('appSettingsBody');
+  body.innerHTML = `
+    <div class="pin-change-block" style="margin-top:0; padding-top:0; border-top:none;">
+      <h3>Google Sheets Sync (optional)</h3>
+      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">Paste your Apps Script Web App URL to auto-send completed sales to a Google Sheet whenever you're online. Sales still save locally first either way.</p>
+      <div class="pin-change-row" style="width:100%;">
+        <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec" value="${escapeHtml(sheetsUrl)}" style="width:100%; min-width:200px;">
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;">
+        <button class="small-btn" onclick="saveSheetsUrlFromInput()">Save URL</button>
+        <button class="small-btn alt" onclick="flushPendingSync()">🔄 Sync Now</button>
+        <span id="syncStatusLbl" style="font-size:11.5px; color:var(--muted2);">${pendingSync.length>0 ? pendingSync.length+' order(s) waiting to sync' : 'All synced'}</span>
+      </div>
+    </div>
+    <div class="pin-change-block">
+      <h3>Security PIN</h3>
+      <div class="pin-change-row">
+        <input type="password" id="curPin" placeholder="Current PIN" inputmode="numeric" maxlength="6">
+        <input type="password" id="newPin" placeholder="New PIN (4–6 digits)" inputmode="numeric" maxlength="6">
+        <button class="small-btn" onclick="changePin()">Update PIN</button>
+      </div>
+    </div>`;
+}
 
 function renderMenuEditor(){
   const body = document.getElementById('menuEditorBody');
@@ -891,28 +996,6 @@ function renderMenuEditor(){
     <div class="cat-add">
       <input type="text" placeholder="New category name" id="newcat">
       <button class="small-btn" onclick="addCategory()">Add Category</button>
-    </div>`;
-  html += `
-    <div class="pin-change-block">
-      <h3>Google Sheets Sync (optional)</h3>
-      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">Paste your Apps Script Web App URL to auto-send completed sales to a Google Sheet whenever you're online. Sales still save locally first either way.</p>
-      <div class="pin-change-row" style="width:100%;">
-        <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec" value="${escapeHtml(sheetsUrl)}" style="width:100%; min-width:200px;">
-      </div>
-      <div style="display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;">
-        <button class="small-btn" onclick="saveSheetsUrlFromInput()">Save URL</button>
-        <button class="small-btn alt" onclick="flushPendingSync()">🔄 Sync Now</button>
-        <span id="syncStatusLbl" style="font-size:11.5px; color:var(--muted2);">${pendingSync.length>0 ? pendingSync.length+' order(s) waiting to sync' : 'All synced'}</span>
-      </div>
-    </div>`;
-  html += `
-    <div class="pin-change-block">
-      <h3>Security PIN</h3>
-      <div class="pin-change-row">
-        <input type="password" id="curPin" placeholder="Current PIN" inputmode="numeric" maxlength="6">
-        <input type="password" id="newPin" placeholder="New PIN (4–6 digits)" inputmode="numeric" maxlength="6">
-        <button class="small-btn" onclick="changePin()">Update PIN</button>
-      </div>
     </div>`;
   body.innerHTML = html;
 }
@@ -1005,7 +1088,7 @@ function renderHistory(){
       const d = new Date(o.time);
       const linesStr = o.lines.map(l=>`${l.qty}× ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}`).join(', ');
       return `<div class="hist-item ${o.voided?'voided':''}">
-        <div class="hist-top"><span>#${o.orderNo}${o.table ? ` · Table ${escapeHtml(o.table)}` : ''} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div class="hist-top"><span>#${o.orderNo} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="hist-tags">
           <span class="hist-tag">${escapeHtml(o.orderType||'Dine-in')}</span>
           <span class="hist-tag">${escapeHtml(o.paymentMethod||'Cash')}</span>
@@ -1123,12 +1206,12 @@ function downloadCSV(filename, rows){
 function exportOrdersCSV(){
   const orders = getRangeOrders();
   if(orders.length===0){ showToast("No orders in that range"); return; }
-  const rows = [["Order #","Table/Priority #","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
+  const rows = [["Order #","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
   orders.forEach(o=>{
     const d = new Date(o.time);
     const itemsStr = o.lines.map(l=>`${l.qty}x ${l.name}${l.note?` (${l.note})`:''}`).join('; ');
     rows.push([
-      o.orderNo, o.table||'', d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+      o.orderNo, d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
       o.orderType||'', o.paymentMethod||'',
       itemsStr, (o.subtotal||o.total).toFixed(2), (o.discount||0).toFixed(2), o.total.toFixed(2),
       o.cash.toFixed(2), Math.max(o.change,0).toFixed(2)
