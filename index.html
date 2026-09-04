@@ -106,6 +106,8 @@
   }
   .tab:hover{border-color:var(--chili); color:var(--chili-dark);}
   .tab.active{background:var(--chili); color:#fff; border-color:var(--chili); box-shadow:0 4px 12px var(--chili-glow);}
+  .tab.tab-fav{border-color:var(--yolk-dark); color:var(--yolk-dark); font-weight:800;}
+  .tab.tab-fav.active{background:var(--yolk); color:var(--broth); border-color:var(--yolk-dark); box-shadow:0 4px 12px rgba(255,199,44,0.45);}
 
   .grid-wrap{flex:1; overflow-y:auto; padding:16px 20px 90px; scroll-behavior:smooth;}
   .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(152px,1fr)); gap:13px;}
@@ -128,6 +130,7 @@
     transition:transform .12s ease;
   }
   .item-card:hover .plus{transform:scale(1.12) rotate(90deg);}
+  .fav-badge{position:absolute; top:10px; left:10px; font-size:13px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25));}
   .soldout-badge{
     position:absolute; top:10px; right:10px; background:var(--chili); color:#fff; font-size:9px;
     font-weight:800; padding:3px 7px; border-radius:6px; letter-spacing:.5px;
@@ -183,7 +186,6 @@
   }
   .table-input::placeholder{color:#6b5a2a; font-weight:700;}
   .table-input:focus{outline:2px solid var(--chili); outline-offset:1px; box-shadow:var(--shadow-md);}
-  .table-input.readonly{cursor:default; user-select:none;}
   .ticket-hint{font-size:10.5px; color:var(--muted2); text-align:center; margin-top:8px; line-height:1.4;}
   .pill-group{display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap;}
   .pill{
@@ -228,6 +230,16 @@
     padding:9px 10px; background:var(--cream); color:var(--broth); transition:border-color .15s ease;
   }
   .cash-row input:focus{border-color:var(--chili);}
+  .quick-cash{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .qc-btn{
+    flex:1; min-width:50px; background:var(--panel); border:1.5px solid var(--line); border-radius:8px;
+    padding:7px 4px; font-family:var(--mono); font-weight:700; font-size:12px; color:var(--broth);
+    transition:transform .1s ease, background .15s ease, border-color .15s ease; box-shadow:var(--shadow-sm);
+  }
+  .qc-btn:hover{border-color:var(--herb); background:#EAF7EC;}
+  .qc-btn:active{transform:scale(0.92);}
+  .qc-btn.exact{background:var(--herb); color:#fff; border-color:var(--herb); flex-basis:70px;}
+  .qc-btn.clear{flex:0 0 auto; min-width:34px; color:var(--chili); border-color:var(--chili);}
   .change-line{font-weight:800; color:var(--herb-dark);}
   .change-line.short{color:var(--chili);}
 
@@ -360,6 +372,8 @@
   .pin-change-block h3{font-size:12px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted2); margin:0 0 10px; font-weight:800;}
   .pin-change-row{display:flex; gap:8px; flex-wrap:wrap;}
   .pin-change-row input{border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-family:var(--mono); font-size:13px; background:var(--cream); width:110px;}
+  .backup-status{font-size:12px; font-weight:700; color:var(--herb-dark); background:#EAF7EC; border-radius:8px; padding:8px 11px;}
+  .backup-status.warn{color:var(--chili-dark); background:#FCEBEA;}
 
   .toast{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -369,15 +383,21 @@
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  #printArea{display:none;}
-  @media print{
-    body *{visibility:hidden;}
-    #printArea, #printArea *{visibility:visible;}
-    #printArea{display:block; position:absolute; top:0; left:0; width:280px; padding:10px; font-family:var(--mono); font-size:12px; color:#000;}
-    #printArea .pr-center{text-align:center;}
-    #printArea .pr-row{display:flex; justify-content:space-between;}
-    #printArea hr{border:none; border-top:1px dashed #000; margin:8px 0;}
+  /* ---------- OUTDOOR / HIGH-CONTRAST MODE ---------- */
+  body.hc-mode{
+    --line:#3d2c1a; --muted2:#5b4a30; --cream:#FFFFFF;
+    background:#FFFFFF;
   }
+  body.hc-mode .item-card{border-width:2.5px;}
+  body.hc-mode .item-name{font-size:16.5px;}
+  body.hc-mode .item-price{font-size:15.5px; font-weight:800;}
+  body.hc-mode .item-note{font-size:12px;}
+  body.hc-mode .tab{font-size:14.5px; padding:11px 19px; font-weight:800;}
+  body.hc-mode .btn{font-size:16px; padding:16px;}
+  body.hc-mode .head-btn{font-size:13.5px; padding:11px 16px;}
+  body.hc-mode .qc-btn{font-size:13.5px; padding:9px 6px; font-weight:800;}
+  body.hc-mode .tl-name, body.hc-mode .tl-amt{font-size:13.5px;}
+  body.hc-mode .trow.grand{font-size:19px;}
 </style>
 </head>
 <body>
@@ -393,6 +413,7 @@
   <div class="head-actions">
     <span class="clock" id="clock"></span>
     <button class="head-btn" onclick="openHistory()">🧾 Sales</button>
+    <button class="head-btn" onclick="requirePin(openInventory)">📦 Inventory<span class="lock-badge">🔒</span></button>
     <button class="head-btn" onclick="openSettings()">📋 Menu</button>
     <button class="head-btn" onclick="requirePin(openAppSettings)">⚙️ Settings<span class="lock-badge">🔒</span></button>
   </div>
@@ -410,36 +431,46 @@
     <div class="ticket">
       <div class="ticket-head">
         <div class="table-row">
-          <div id="tableInput" class="table-input readonly" aria-live="polite">Order #—</div>
+          <input type="text" id="tableInput" class="table-input" oninput="onTableInput()" onblur="onTableInput()">
         </div>
         <div class="sub" id="orderMeta">—</div>
         <div class="pill-group" id="paymentPills"></div>
       </div>
       <div class="ticket-lines" id="ticketLines"></div>
       <div class="ticket-totals">
-        <div class="trow"><span>Subtotal</span><span id="subtotal">₱0.00</span></div>
+        <div class="trow"><span data-i18n="subtotal">Subtotal</span><span id="subtotal">₱0.00</span></div>
         <div class="trow disc" id="discRow" style="display:none;"><span id="discLbl">Discount</span><span id="discAmt">-₱0.00</span></div>
-        <button class="discount-toggle" onclick="toggleDiscountRow()" id="discToggleBtn">+ Add discount</button>
+        <button class="discount-toggle" onclick="toggleDiscountRow()" id="discToggleBtn" data-i18n="addDiscount">+ Add discount</button>
         <div class="discount-row" id="discountRow">
           <select id="discType" onchange="onDiscTypeChange()">
-            <option value="none">No discount</option>
+            <option value="none" data-i18n="discNone">No discount</option>
             <option value="percent">Percent %</option>
-            <option value="fixed">Fixed ₱ off</option>
+            <option value="fixed" data-i18n="discFixed">Fixed ₱ off</option>
             <option value="senior">Senior/PWD 20%</option>
           </select>
           <input type="number" id="discValue" placeholder="0" oninput="renderTotals()">
         </div>
-        <div class="trow grand"><span>Total</span><span id="grandTotal">₱0.00</span></div>
+        <div class="trow grand"><span data-i18n="total">Total</span><span id="grandTotal">₱0.00</span></div>
         <div class="cash-row" id="cashRow">
-          <span style="font-size:12px; color:var(--muted2);">Cash</span>
+          <span style="font-size:12px; color:var(--muted2);" data-i18n="cash">Cash</span>
           <input type="number" inputmode="decimal" id="cashInput" placeholder="0.00" oninput="renderTotals()">
+        </div>
+        <div class="quick-cash" id="quickCash">
+          <button class="qc-btn" onclick="addQuickCash(20)">₱20</button>
+          <button class="qc-btn" onclick="addQuickCash(50)">₱50</button>
+          <button class="qc-btn" onclick="addQuickCash(100)">₱100</button>
+          <button class="qc-btn" onclick="addQuickCash(200)">₱200</button>
+          <button class="qc-btn" onclick="addQuickCash(500)">₱500</button>
+          <button class="qc-btn" onclick="addQuickCash(1000)">₱1000</button>
+          <button class="qc-btn exact" onclick="setExactCash()">Exact</button>
+          <button class="qc-btn clear" onclick="clearCash()" title="Clear cash">✕</button>
         </div>
         <div class="trow change-line" id="changeRow" style="display:none;"><span id="changeLbl">Change</span><span id="changeAmt">₱0.00</span></div>
       </div>
       <div class="ticket-actions">
-        <button class="btn btn-charge" id="chargeBtn" onclick="completeOrder()" disabled>Settle Bill &amp; Charge</button>
-        <button class="btn btn-ghost" onclick="clearOrder()">Clear this order</button>
-        <div class="ticket-hint">Orders stay open for adding items. Only charge once the table is ready to pay.</div>
+        <button class="btn btn-charge" id="chargeBtn" onclick="completeOrder()" disabled data-i18n="chargeBtn">Settle Bill &amp; Charge</button>
+        <button class="btn btn-ghost" onclick="clearOrder()" data-i18n="clearOrder">Clear this order</button>
+        <div class="ticket-hint" data-i18n="ticketHint">Orders stay open for adding items. Only charge once the table is ready to pay.</div>
       </div>
     </div>
   </div>
@@ -449,7 +480,7 @@
 
 <div class="overlay" id="settingsOverlay">
   <div class="modal">
-    <div class="modal-head"><h2>Edit Menu</h2><button class="modal-close" onclick="closeModal('settingsOverlay')">✕</button></div>
+    <div class="modal-head"><h2 data-i18n="editMenu">Edit Menu</h2><button class="modal-close" onclick="closeModal('settingsOverlay')">✕</button></div>
     <div class="modal-body" id="menuEditorBody"></div>
   </div>
 </div>
@@ -461,12 +492,19 @@
   </div>
 </div>
 
+<div class="overlay" id="inventoryOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Daily Inventory</h2><button class="modal-close" onclick="closeModal('inventoryOverlay')">✕</button></div>
+    <div class="modal-body" id="inventoryBody"></div>
+  </div>
+</div>
+
 <div class="overlay" id="historyOverlay">
   <div class="modal">
     <div class="modal-head">
-      <h2>Sales History</h2>
+      <h2 data-i18n="salesHistory">Sales History</h2>
       <div style="display:flex; align-items:center; gap:10px;">
-        <button class="btn-refresh" id="historyRefreshBtn" onclick="refreshHistory()" title="Refresh">↻ Refresh</button>
+        <button class="btn-refresh" id="historyRefreshBtn" onclick="refreshHistory()" title="Refresh" data-i18n="refresh">↻ Refresh</button>
         <button class="modal-close" onclick="closeModal('historyOverlay')">✕</button>
       </div>
     </div>
@@ -478,32 +516,19 @@
   <div class="modal pin-modal">
     <div class="modal-body">
       <div class="pin-icon">🔒</div>
-      <p>Enter the security PIN to continue</p>
+      <p data-i18n="pinPrompt">Enter the security PIN to continue</p>
       <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
       <div class="pin-error" id="pinError"></div>
       <div class="pin-btns">
-        <button class="btn btn-ghost" onclick="cancelPin()">Cancel</button>
-        <button class="btn btn-charge" onclick="submitPin()">Unlock</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="receiptPromptOverlay">
-  <div class="modal pin-modal">
-    <div class="modal-body">
-      <div class="pin-icon">✅</div>
-      <p id="receiptPromptText">Order completed</p>
-      <div class="pin-btns">
-        <button class="btn btn-ghost" onclick="closeModal('receiptPromptOverlay')">Skip</button>
-        <button class="btn btn-charge" onclick="confirmPrintReceipt()">🖨️ Print Receipt</button>
+        <button class="btn btn-ghost" onclick="cancelPin()" data-i18n="cancel">Cancel</button>
+        <button class="btn btn-charge" onclick="submitPin()" data-i18n="unlock">Unlock</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="printArea"></div>
+<input type="file" id="restoreFileInput" accept="application/json" style="display:none" onchange="restoreFromFile(event)">
 
 <script>
 /* ================= STORAGE (works standalone, no internet needed) =================
@@ -567,13 +592,17 @@ let pinResolve = null;
 
 let tickets = [];
 let activeTicketId = null;
+let highContrast = false;
+let uiLang = 'en';
+let lastBackupDate = null;
+let inventory = { date: null, counts: {} };
 
 function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
 function newTicket(){
   return {
     id: uid('t'), orderNo: null, lines: [],
-    orderType: "Dine-in", paymentMethod: "Cash",
+    table: "", orderType: "Dine-in", paymentMethod: "Cash",
     discType: "none", discValue: 0, cashInput: ""
   };
 }
@@ -583,6 +612,7 @@ function ensureOrderNo(t){
   dayCounter.count += 1;
   saveDayCounter();
   t.orderNo = dayCounter.count;
+  if(!t.table) t.table = `Order #${t.orderNo}`;
 }
 /* Every open order tab gets its order number the moment it's created */
 function createTicketWithOrderNo(){
@@ -600,6 +630,10 @@ async function loadData(){
   try{ const dc = await appStorage.get('dayCounter'); if(dc && dc.value){ const parsed = JSON.parse(dc.value); if(parsed.date===todayStr()) dayCounter = parsed; } }catch(e){}
   try{ const su = await appStorage.get('sheetsUrl'); if(su && su.value) sheetsUrl = su.value; }catch(e){}
   try{ const ps = await appStorage.get('pendingSync'); if(ps && ps.value) pendingSync = JSON.parse(ps.value); }catch(e){}
+  try{ const hc = await appStorage.get('highContrast'); if(hc && hc.value==='1'){ highContrast = true; document.body.classList.add('hc-mode'); } }catch(e){}
+  try{ const lang = await appStorage.get('uiLang'); if(lang && lang.value){ uiLang = lang.value; } }catch(e){}
+  try{ const lb = await appStorage.get('lastBackupDate'); if(lb && lb.value) lastBackupDate = lb.value; }catch(e){}
+  try{ const inv = await appStorage.get('inventory'); if(inv && inv.value) inventory = JSON.parse(inv.value); }catch(e){}
 
   try{
     const ot = await appStorage.get('openTickets');
@@ -620,6 +654,7 @@ async function loadData(){
 
   renderTabs(); renderGrid();
   renderTicketTabs(); renderCart();
+  applyStaticLanguage();
   flushPendingSync();
 }
 async function saveMenu(){ try{ await appStorage.set('menu', JSON.stringify(menu)); }catch(e){ showToast("Menu saved on this device only"); } }
@@ -629,6 +664,189 @@ async function saveDayCounter(){ try{ await appStorage.set('dayCounter', JSON.st
 async function saveSheetsUrl(){ try{ await appStorage.set('sheetsUrl', sheetsUrl); }catch(e){} }
 async function savePendingSync(){ try{ await appStorage.set('pendingSync', JSON.stringify(pendingSync)); }catch(e){} }
 async function saveTickets(){ try{ await appStorage.set('openTickets', JSON.stringify({tickets, activeTicketId})); }catch(e){} }
+async function saveHighContrast(){ try{ await appStorage.set('highContrast', highContrast ? '1' : '0'); }catch(e){} }
+async function saveUiLang(){ try{ await appStorage.set('uiLang', uiLang); }catch(e){} }
+async function saveLastBackupDate(){ try{ await appStorage.set('lastBackupDate', lastBackupDate); }catch(e){} }
+async function saveInventory(){ try{ await appStorage.set('inventory', JSON.stringify(inventory)); }catch(e){} }
+
+/* ================= DISPLAY MODE ================= */
+function toggleHighContrast(){
+  highContrast = !highContrast;
+  document.body.classList.toggle('hc-mode', highContrast);
+  saveHighContrast();
+  renderAppSettings();
+}
+
+/* ================= LANGUAGE ================= */
+const LANG = {
+  cash: {en:"Cash", fil:"Pera"},
+  noItemsYet: {en:"No items yet", fil:"Wala pang item"},
+  emptyCartLine1: {en:"Tap a menu item", fil:"Pindutin ang item sa menu"},
+  emptyCartLine2: {en:"to start the order", fil:"para simulan ang order"},
+  noItemsCat: {en:"No items in this category yet. Tap 📋 Menu to add some.", fil:"Wala pang item sa kategoryang ito. Pindutin ang 📋 Menu para magdagdag."},
+  soldOut: {en:"SOLD OUT", fil:"UBOS NA"},
+  noteBtn: {en:"note", fil:"tala"},
+  removeBtn: {en:"remove", fil:"tanggalin"},
+  chargeBtn: {en:"Settle Bill & Charge", fil:"Singilin ang Bill"},
+  clearOrder: {en:"Clear this order", fil:"I-clear ang order na ito"},
+  ticketHint: {en:"Orders stay open for adding items. Only charge once the table is ready to pay.", fil:"Nananatiling bukas ang order para makadagdag pa ng item. Singilin lang kapag handa nang magbayad."},
+  addDiscount: {en:"+ Add discount", fil:"+ Idagdag ang discount"},
+  subtotal: {en:"Subtotal", fil:"Subtotal"},
+  total: {en:"Total", fil:"Kabuuan"},
+  change: {en:"Change", fil:"Sukli"},
+  shortBy: {en:"Short by", fil:"Kulang ng"},
+  editMenu: {en:"Edit Menu", fil:"I-edit ang Menu"},
+  salesHistory: {en:"Sales History", fil:"Kasaysayan ng Benta"},
+  refresh: {en:"↻ Refresh", fil:"↻ I-refresh"},
+  pinPrompt: {en:"Enter the security PIN to continue", fil:"Ilagay ang security PIN para magpatuloy"},
+  cancel: {en:"Cancel", fil:"Kanselahin"},
+  unlock: {en:"Unlock", fil:"I-unlock"},
+  discNone: {en:"No discount", fil:"Walang discount"},
+  discFixed: {en:"Fixed ₱ off", fil:"Nakatakdang ₱ bawas"},
+  discountWord: {en:"Discount", fil:"Discount"},
+};
+function i18n(key){ const e = LANG[key]; if(!e) return key; return e[uiLang] || e.en; }
+function applyStaticLanguage(){
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = i18n(el.getAttribute('data-i18n')); });
+}
+function setLanguage(lang){
+  uiLang = lang;
+  saveUiLang();
+  applyStaticLanguage();
+  renderGrid(); renderCart(); renderAppSettings();
+}
+
+/* ================= BACKUP & RESTORE ================= */
+function getBackupInfo(){
+  if(!lastBackupDate) return {text:"⚠️ Never backed up — download one now", warn:true};
+  const days = Math.floor((Date.now() - new Date(lastBackupDate).getTime()) / 86400000);
+  if(days <= 0) return {text:"✅ Backed up today", warn:false};
+  if(days === 1) return {text:"Last backup: 1 day ago", warn:false};
+  if(days <= 3) return {text:`Last backup: ${days} days ago`, warn:false};
+  return {text:`⚠️ Last backup: ${days} days ago — back up again soon`, warn:true};
+}
+function downloadBackup(){
+  const backup = {
+    menu, salesLog, dayCounter, sheetsUrl, securityPin, pendingSync,
+    tickets, activeTicketId, inventory,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  a.href = url; a.download = `balutan-backup-${stamp}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  lastBackupDate = new Date().toISOString();
+  saveLastBackupDate();
+  renderAppSettings();
+  showToast("Backup downloaded ✓");
+}
+function triggerRestoreFile(){ document.getElementById('restoreFileInput').click(); }
+function restoreFromFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.menu || !data.salesLog){ showToast("That file doesn't look like a valid backup"); return; }
+      if(!confirm("Restore this backup? This will replace your current menu, sales history, and settings on this device.")) return;
+      menu = data.menu || menu;
+      salesLog = data.salesLog || salesLog;
+      dayCounter = data.dayCounter || dayCounter;
+      sheetsUrl = data.sheetsUrl || sheetsUrl;
+      securityPin = data.securityPin || securityPin;
+      pendingSync = data.pendingSync || pendingSync;
+      inventory = data.inventory || inventory;
+      tickets = (data.tickets && data.tickets.length) ? data.tickets : tickets;
+      activeTicketId = data.activeTicketId || (tickets[0] && tickets[0].id);
+      saveMenu(); saveSales(); saveDayCounter(); saveSheetsUrl(); savePin(); savePendingSync(); saveTickets(); saveInventory();
+      activeCategory = null;
+      renderTabs(); renderGrid(); renderTicketTabs(); renderCart(); renderAppSettings();
+      showToast("Backup restored ✓");
+    }catch(err){
+      showToast("Couldn't read that backup file");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+/* ================= DAILY INVENTORY ================= */
+function soldQtyForItem(itemId, itemName){
+  const today = new Date().toDateString();
+  let sold = 0;
+  salesLog.forEach(o=>{
+    if(o.voided) return;
+    if(new Date(o.time).toDateString() !== today) return;
+    o.lines.forEach(l=>{
+      if((l.id && l.id===itemId) || (!l.id && l.name===itemName)) sold += l.qty;
+    });
+  });
+  return sold;
+}
+function openInventory(){ renderInventory(); document.getElementById('inventoryOverlay').classList.add('show'); }
+function renderInventory(){
+  const body = document.getElementById('inventoryBody');
+  const isToday = inventory.date === todayStr();
+  let html = '';
+  html += isToday
+    ? `<div class="backup-status" style="margin-bottom:14px;">✅ Today's inventory is set. Stock updates automatically as sales come in.</div>`
+    : `<div class="backup-status warn" style="margin-bottom:14px;">⚠️ You haven't set today's inventory yet. Enter starting counts below, then tap Save to begin the day.</div>`;
+
+  let anyItems = false;
+  for(const cat in menu){
+    const items = menu[cat];
+    if(!items.length) continue;
+    anyItems = true;
+    html += `<div class="cat-block"><h3>${escapeHtml(cat)}</h3>`;
+    items.forEach(it=>{
+      const rawCount = isToday ? inventory.counts[it.id] : undefined;
+      const hasCount = rawCount !== undefined && rawCount !== null && rawCount !== '';
+      const sold = hasCount ? soldQtyForItem(it.id, it.name) : 0;
+      const remaining = hasCount ? (Number(rawCount) - sold) : null;
+      html += `<div class="menu-row">
+        <div class="m-name" style="flex:1; min-width:110px; font-weight:700;">${escapeHtml(it.name)}</div>
+        <input type="number" min="0" class="m-price inv-qty" style="width:70px;" data-item="${it.id}" placeholder="Qty" value="${hasCount ? rawCount : ''}">
+        ${hasCount
+          ? `<span style="font-size:11.5px; color:var(--muted2); white-space:nowrap;">Sold ${sold} · Left <strong style="color:${remaining<=0?'var(--chili)':'var(--herb-dark)'}">${remaining}</strong></span>`
+          : `<span style="font-size:11px; color:var(--muted2);">Not set</span>`}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  if(!anyItems){
+    html += `<div class="empty-hist">Add items in the Menu editor first, then set today's inventory here.</div>`;
+  }
+  html += `<div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+    <button class="small-btn" onclick="saveTodayInventory()">💾 Save Inventory for Today</button>
+    <button class="danger-link" onclick="clearTodayInventory()">Clear today's inventory</button>
+  </div>`;
+  body.innerHTML = html;
+}
+function saveTodayInventory(){
+  const inputs = document.querySelectorAll('.inv-qty');
+  const counts = {};
+  inputs.forEach(inp=>{
+    const val = inp.value;
+    if(val !== '' && !isNaN(val)) counts[inp.getAttribute('data-item')] = Number(val);
+  });
+  inventory = { date: todayStr(), counts };
+  saveInventory();
+  renderInventory();
+  showToast("Today's inventory saved ✓");
+  syncInventorySnapshot();
+}
+function clearTodayInventory(){
+  if(!confirm("Clear today's inventory counts? You'll need to re-enter them.")) return;
+  inventory = { date: null, counts: {} };
+  saveInventory();
+  renderInventory();
+  showToast("Inventory cleared");
+}
 
 /* ================= HELPERS ================= */
 function peso(n){ return "₱" + n.toFixed(2); }
@@ -644,23 +862,35 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;',
 /* ================= MENU / GRID ================= */
 function renderTabs(){
   const cats = Object.keys(menu);
-  if(!activeCategory || !cats.includes(activeCategory)) activeCategory = cats[0] || null;
-  document.getElementById('tabs').innerHTML = cats.map(c =>
-    `<button class="tab ${c===activeCategory?'active':''}" onclick="selectCategory('${c.replace(/'/g,"\\'")}')">${escapeHtml(c)}</button>`
+  const hasFav = cats.some(c => (menu[c]||[]).some(it=>it.fav));
+  const tabList = hasFav ? ['__fav__', ...cats] : cats;
+  if(!activeCategory || !tabList.includes(activeCategory)) activeCategory = tabList[0] || null;
+  document.getElementById('tabs').innerHTML = tabList.map(c =>
+    c === '__fav__'
+      ? `<button class="tab tab-fav ${c===activeCategory?'active':''}" onclick="selectCategory('__fav__')">⭐ Top Picks</button>`
+      : `<button class="tab ${c===activeCategory?'active':''}" onclick="selectCategory('${c.replace(/'/g,"\\'")}')">${escapeHtml(c)}</button>`
   ).join('');
 }
 function selectCategory(c){ activeCategory = c; renderTabs(); renderGrid(); }
 
 function renderGrid(){
   const grid = document.getElementById('grid');
-  const items = activeCategory ? (menu[activeCategory]||[]) : [];
+  let items;
+  if(activeCategory === '__fav__'){
+    items = [];
+    for(const cat in menu){ (menu[cat]||[]).forEach(it => { if(it.fav) items.push(it); }); }
+  }else{
+    items = activeCategory ? (menu[activeCategory]||[]) : [];
+    items = [...items].sort((a,b) => (b.fav?1:0) - (a.fav?1:0));
+  }
   if(items.length===0){
-    grid.innerHTML = `<div class="empty-menu">No items in this category yet. Tap ⚙️ Menu to add some.</div>`;
+    grid.innerHTML = `<div class="empty-menu">${i18n('noItemsCat')}</div>`;
     return;
   }
   grid.innerHTML = items.map(it => `
     <button class="item-card ${it.soldOut?'soldout':''}" onclick="addToCart('${it.id}')" ${it.soldOut?'disabled':''}>
-      ${it.soldOut ? '<span class="soldout-badge">SOLD OUT</span>' : '<span class="plus">+</span>'}
+      ${it.fav ? '<span class="fav-badge">⭐</span>' : ''}
+      ${it.soldOut ? `<span class="soldout-badge">${i18n('soldOut')}</span>` : '<span class="plus">+</span>'}
       <span class="item-name">${escapeHtml(it.name)}</span>
       ${it.note ? `<span class="item-note">${escapeHtml(it.note)}</span>` : ''}
       <span class="item-price">${peso(it.price)}</span>
@@ -673,11 +903,15 @@ function renderTicketTabs(){
   const wrap = document.getElementById('ticketTabs');
   wrap.innerHTML = tickets.map(t => `
     <button class="tticket-tab ${t.id===activeTicketId?'active':''}" onclick="switchTicket('${t.id}')">
-      #${t.orderNo} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
+      ${escapeHtml(t.table) || `#${t.orderNo}`} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
       ${tickets.length>1 ? `<span class="ticket-tab-close" onclick="event.stopPropagation(); closeTicket('${t.id}')">✕</span>` : ''}
     </button>
   `).join('') + `<button class="ticket-tab-add" onclick="addTicket()">+</button>` + (tickets.length>1 ? `<button class="ticket-tab-clear" onclick="clearAllTickets()" title="Remove all order tabs">🗑</button>` : '');
   saveTickets();
+}
+function onTableInput(){
+  activeTicket().table = document.getElementById('tableInput').value;
+  renderTicketTabs();
 }
 function addTicket(){
   const t = createTicketWithOrderNo();
@@ -770,13 +1004,14 @@ function renderCart(){
   const wrap = document.getElementById('ticketLines');
   const count = t.lines.reduce((s,l)=>s+l.qty,0);
   document.getElementById('mobCount').textContent = tickets.reduce((s,tk)=>s+tk.lines.reduce((a,l)=>a+l.qty,0),0);
-  document.getElementById('tableInput').textContent = `Order #${t.orderNo}`;
-  document.getElementById('orderMeta').textContent = count>0 ? `${count} item${count>1?'s':''}` : "No items yet";
+  document.getElementById('tableInput').value = t.table || '';
+  document.getElementById('orderMeta').textContent = count>0 ? `${count} item${count>1?'s':''}` : i18n('noItemsYet');
 
   document.getElementById('paymentPills').innerHTML = PAYMENT_METHODS.map(pm =>
     `<button class="pill ${t.paymentMethod===pm?'active pay':''}" onclick="setPaymentMethod('${pm}')">${pm}</button>`
   ).join('');
   document.getElementById('cashRow').style.display = t.paymentMethod==='Cash' ? 'flex' : 'none';
+  document.getElementById('quickCash').style.display = t.paymentMethod==='Cash' ? 'flex' : 'none';
 
   document.getElementById('discType').value = t.discType;
   document.getElementById('discValue').value = t.discValue || '';
@@ -784,7 +1019,7 @@ function renderCart(){
   if(t.discType !== 'none') document.getElementById('discountRow').classList.add('show');
 
   if(t.lines.length===0){
-    wrap.innerHTML = `<div class="ticket-empty"><div>🍜</div>Tap a menu item<br>to start the order</div>`;
+    wrap.innerHTML = `<div class="ticket-empty"><div>🍜</div>${i18n('emptyCartLine1')}<br>${i18n('emptyCartLine2')}</div>`;
   }else{
     wrap.innerHTML = t.lines.map(l => `
       <div class="tline">
@@ -795,8 +1030,8 @@ function renderCart(){
               <button class="qbtn" onclick="changeQty('${l.id}',-1)">–</button>
               <span>${l.qty}</span>
               <button class="qbtn" onclick="changeQty('${l.id}',1)">+</button>
-              <button class="tl-note-btn" onclick="editNote('${l.id}')">note</button>
-              <button class="tl-remove" onclick="removeLine('${l.id}')">remove</button>
+              <button class="tl-note-btn" onclick="editNote('${l.id}')">${i18n('noteBtn')}</button>
+              <button class="tl-remove" onclick="removeLine('${l.id}')">${i18n('removeBtn')}</button>
             </div>
             ${l.note ? `<div class="tl-note">"${escapeHtml(l.note)}"</div>` : ''}
           </div>
@@ -805,6 +1040,26 @@ function renderCart(){
       </div>
     `).join('');
   }
+  renderTotals();
+}
+function addQuickCash(amt){
+  const input = document.getElementById('cashInput');
+  const cur = parseFloat(input.value) || 0;
+  const next = cur + amt;
+  input.value = Number.isInteger(next) ? next : next.toFixed(2);
+  renderTotals();
+}
+function setExactCash(){
+  const t = activeTicket();
+  const subtotal = cartSubtotal(t);
+  const discount = calcDiscount(t, subtotal);
+  const total = Math.max(subtotal - discount, 0);
+  const input = document.getElementById('cashInput');
+  input.value = Number.isInteger(total) ? total : total.toFixed(2);
+  renderTotals();
+}
+function clearCash(){
+  document.getElementById('cashInput').value = '';
   renderTotals();
 }
 
@@ -821,7 +1076,7 @@ function renderTotals(){
   const discRow = document.getElementById('discRow');
   if(discount > 0){
     discRow.style.display = 'flex';
-    document.getElementById('discLbl').textContent = t.discType==='senior' ? 'Senior/PWD (20%)' : t.discType==='percent' ? `Discount (${t.discValue}%)` : 'Discount';
+    document.getElementById('discLbl').textContent = t.discType==='senior' ? 'Senior/PWD (20%)' : t.discType==='percent' ? `${i18n('discountWord')} (${t.discValue}%)` : i18n('discountWord');
     document.getElementById('discAmt').textContent = '-' + peso(discount);
   }else{ discRow.style.display = 'none'; }
   document.getElementById('grandTotal').textContent = peso(total);
@@ -833,7 +1088,7 @@ function renderTotals(){
     if(!isNaN(cashVal) && t.lines.length>0){
       const change = cashVal - total;
       changeRow.style.display = 'flex';
-      document.getElementById('changeLbl').textContent = change >= 0 ? "Change" : "Short by";
+      document.getElementById('changeLbl').textContent = change >= 0 ? i18n('change') : i18n('shortBy');
       document.getElementById('changeAmt').textContent = peso(Math.abs(change));
       changeRow.classList.toggle('short', change < 0);
       chargeBtn.disabled = change < 0 || t.lines.length===0;
@@ -860,8 +1115,8 @@ function completeOrder(){
   const change = (t.paymentMethod==='Cash') ? (cash - total) : 0;
 
   const order = {
-    id: uid('ord'), orderNo: t.orderNo, time: new Date().toISOString(),
-    lines: t.lines.map(l=>({name:l.name, qty:l.qty, price:l.price, note:l.note||""})),
+    id: uid('ord'), orderNo: t.orderNo, table: t.table || "", time: new Date().toISOString(),
+    lines: t.lines.map(l=>({id:l.id, name:l.name, qty:l.qty, price:l.price, note:l.note||""})),
     orderType: t.orderType, paymentMethod: t.paymentMethod,
     subtotal, discount, total, cash, change, voided:false
   };
@@ -874,40 +1129,6 @@ function completeOrder(){
   activeTicketId = tickets[0].id;
   renderTicketTabs(); renderCart();
   showToast(`Order #${order.orderNo} completed ✓`);
-  showReceiptPrompt(order);
-}
-
-let lastCompletedOrder = null;
-function showReceiptPrompt(order){
-  lastCompletedOrder = order;
-  document.getElementById('receiptPromptText').textContent = `Order #${order.orderNo} completed — ${peso(order.total)}`;
-  document.getElementById('receiptPromptOverlay').classList.add('show');
-}
-function confirmPrintReceipt(){
-  if(lastCompletedOrder) printReceipt(lastCompletedOrder);
-  closeModal('receiptPromptOverlay');
-}
-
-function printReceipt(order){
-  const d = new Date(order.time);
-  const lines = order.lines.map(l =>
-    `<div class="pr-row"><span>${l.qty}x ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}</span><span>${peso(l.price*l.qty)}</span></div>`
-  ).join('');
-  document.getElementById('printArea').innerHTML = `
-    <div class="pr-center"><strong>BALUTAN NI ARNEL</strong><br>Order #${order.orderNo} — ${escapeHtml(order.orderType)}</div>
-    <div>${d.toLocaleDateString()} ${d.toLocaleTimeString()}</div>
-    <hr>
-    ${lines}
-    <hr>
-    <div class="pr-row"><span>Subtotal</span><span>${peso(order.subtotal)}</span></div>
-    ${order.discount>0 ? `<div class="pr-row"><span>Discount</span><span>-${peso(order.discount)}</span></div>` : ''}
-    <div class="pr-row"><span>Total</span><span><strong>${peso(order.total)}</strong></span></div>
-    <div class="pr-row"><span>Payment</span><span>${escapeHtml(order.paymentMethod)}</span></div>
-    ${order.paymentMethod==='Cash' ? `<div class="pr-row"><span>Cash</span><span>${peso(order.cash)}</span></div><div class="pr-row"><span>Change</span><span>${peso(Math.max(order.change,0))}</span></div>` : ''}
-    <hr>
-    <div class="pr-center">Salamat sa pag-order! 🍜</div>
-  `;
-  setTimeout(()=>window.print(), 150);
 }
 
 /* ================= MOBILE TICKET TOGGLE ================= */
@@ -946,6 +1167,7 @@ function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 
 function renderAppSettings(){
   const body = document.getElementById('appSettingsBody');
+  const backupInfo = getBackupInfo();
   body.innerHTML = `
     <div class="pin-change-block" style="margin-top:0; padding-top:0; border-top:none;">
       <h3>Google Sheets Sync (optional)</h3>
@@ -966,6 +1188,29 @@ function renderAppSettings(){
         <input type="password" id="newPin" placeholder="New PIN (4–6 digits)" inputmode="numeric" maxlength="6">
         <button class="small-btn" onclick="changePin()">Update PIN</button>
       </div>
+    </div>
+    <div class="pin-change-block">
+      <h3>Display</h3>
+      <div class="pill-group" style="justify-content:flex-start;">
+        <button class="pill ${highContrast?'active':''}" onclick="toggleHighContrast()">☀️ Outdoor / High-Contrast Mode</button>
+      </div>
+      <p style="font-size:11px; color:var(--muted2); margin:8px 0 0;">Bigger text and stronger contrast — easier to read on a bright counter.</p>
+    </div>
+    <div class="pin-change-block">
+      <h3>Language</h3>
+      <div class="pill-group" style="justify-content:flex-start;">
+        <button class="pill ${uiLang==='en'?'active':''}" onclick="setLanguage('en')">English</button>
+        <button class="pill ${uiLang==='fil'?'active':''}" onclick="setLanguage('fil')">Filipino</button>
+      </div>
+    </div>
+    <div class="pin-change-block">
+      <h3>Backup &amp; Restore</h3>
+      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">Save a full backup file (menu, sales history, PIN, settings) so you can restore everything if this device is lost or reset.</p>
+      <div class="backup-status ${backupInfo.warn ? 'warn' : ''}">${backupInfo.text}</div>
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button class="small-btn" onclick="downloadBackup()">⬇️ Download Backup</button>
+        <button class="small-btn alt" onclick="triggerRestoreFile()">⬆️ Restore from File</button>
+      </div>
     </div>`;
 }
 
@@ -981,6 +1226,7 @@ function renderMenuEditor(){
         <input type="number" class="m-price" value="${it.price}" step="1" onchange="updateItem('${cat.replace(/'/g,"\\'")}','${it.id}','price',this.value)">
         <input type="text" class="m-note" placeholder="note / combo contents" value="${escapeHtml(it.note||'')}" onchange="updateItem('${cat.replace(/'/g,"\\'")}','${it.id}','note',this.value)">
         <label class="m-soldout"><input type="checkbox" ${it.soldOut?'checked':''} onchange="updateItem('${cat.replace(/'/g,"\\'")}','${it.id}','soldOut',this.checked)">Sold out</label>
+        <label class="m-soldout"><input type="checkbox" ${it.fav?'checked':''} onchange="updateItem('${cat.replace(/'/g,"\\'")}','${it.id}','fav',this.checked)">⭐ Favorite</label>
         <button class="m-del" onclick="deleteItem('${cat.replace(/'/g,"\\'")}','${it.id}')">✕</button>
       </div>
     `).join('');
@@ -1005,6 +1251,7 @@ function updateItem(cat, id, field, value){
   if(!item) return;
   item[field] = field==='price' ? (parseFloat(value)||0) : value;
   saveMenu(); renderGrid();
+  if(field==='fav') renderTabs();
 }
 function deleteItem(cat, id){ menu[cat] = menu[cat].filter(i=>i.id!==id); saveMenu(); renderMenuEditor(); renderGrid(); }
 function addItem(cat){
@@ -1088,7 +1335,7 @@ function renderHistory(){
       const d = new Date(o.time);
       const linesStr = o.lines.map(l=>`${l.qty}× ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}`).join(', ');
       return `<div class="hist-item ${o.voided?'voided':''}">
-        <div class="hist-top"><span>#${o.orderNo} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div class="hist-top"><span>#${o.orderNo}${(o.table && o.table !== `Order #${o.orderNo}`) ? ' · '+escapeHtml(o.table) : ''} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="hist-tags">
           <span class="hist-tag">${escapeHtml(o.orderType||'Dine-in')}</span>
           <span class="hist-tag">${escapeHtml(o.paymentMethod||'Cash')}</span>
@@ -1157,7 +1404,7 @@ async function syncOrder(order){
       method: 'POST',
       mode: 'no-cors',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify(order)
+      body: JSON.stringify({type:'sale', order})
     });
     // no-cors means we can't read the response, so this is best-effort/optimistic
   }catch(e){
@@ -1167,7 +1414,34 @@ async function syncOrder(order){
     }
   }
 }
+async function syncInventorySnapshot(){
+  if(!sheetsUrl || !inventory.date) return;
+  const items = [];
+  for(const cat in menu){
+    (menu[cat]||[]).forEach(it=>{
+      const raw = inventory.counts[it.id];
+      if(raw === undefined || raw === null || raw === '') return;
+      const sold = soldQtyForItem(it.id, it.name);
+      items.push({
+        category: cat, name: it.name,
+        startQty: Number(raw), sold, remaining: Number(raw) - sold
+      });
+    });
+  }
+  if(items.length===0) return;
+  try{
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({type:'inventory', date: inventory.date, items})
+    });
+  }catch(e){
+    // Inventory sync is best-effort only — not queued for retry like sales
+  }
+}
 async function flushPendingSync(){
+  if(sheetsUrl) syncInventorySnapshot();
   if(!sheetsUrl || pendingSync.length===0){ updateSyncLabel(); return; }
   const queue = pendingSync.slice();
   pendingSync = [];
@@ -1206,12 +1480,12 @@ function downloadCSV(filename, rows){
 function exportOrdersCSV(){
   const orders = getRangeOrders();
   if(orders.length===0){ showToast("No orders in that range"); return; }
-  const rows = [["Order #","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
+  const rows = [["Order #","Table/Priority/Note","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
   orders.forEach(o=>{
     const d = new Date(o.time);
     const itemsStr = o.lines.map(l=>`${l.qty}x ${l.name}${l.note?` (${l.note})`:''}`).join('; ');
     rows.push([
-      o.orderNo, d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+      o.orderNo, o.table||'', d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
       o.orderType||'', o.paymentMethod||'',
       itemsStr, (o.subtotal||o.total).toFixed(2), (o.discount||0).toFixed(2), o.total.toFixed(2),
       o.cash.toFixed(2), Math.max(o.change,0).toFixed(2)
