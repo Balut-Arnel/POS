@@ -612,7 +612,6 @@ function ensureOrderNo(t){
   dayCounter.count += 1;
   saveDayCounter();
   t.orderNo = dayCounter.count;
-  if(!t.table) t.table = `Order #${t.orderNo}`;
 }
 /* Every open order tab gets its order number the moment it's created */
 function createTicketWithOrderNo(){
@@ -903,7 +902,7 @@ function renderTicketTabs(){
   const wrap = document.getElementById('ticketTabs');
   wrap.innerHTML = tickets.map(t => `
     <button class="tticket-tab ${t.id===activeTicketId?'active':''}" onclick="switchTicket('${t.id}')">
-      ${escapeHtml(t.table) || `#${t.orderNo}`} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
+      ${escapeHtml(t.table) || `New`} <span class="cnt">${t.lines.reduce((s,l)=>s+l.qty,0)}</span>
       ${tickets.length>1 ? `<span class="ticket-tab-close" onclick="event.stopPropagation(); closeTicket('${t.id}')">✕</span>` : ''}
     </button>
   `).join('') + `<button class="ticket-tab-add" onclick="addTicket()">+</button>` + (tickets.length>1 ? `<button class="ticket-tab-clear" onclick="clearAllTickets()" title="Remove all order tabs">🗑</button>` : '');
@@ -1128,7 +1127,7 @@ function completeOrder(){
   if(tickets.length===0) tickets = [createTicketWithOrderNo()];
   activeTicketId = tickets[0].id;
   renderTicketTabs(); renderCart();
-  showToast(`Order #${order.orderNo} completed ✓`);
+  showToast(`${order.table ? "Table "+order.table+" " : "Order "}completed ✓`);
 }
 
 /* ================= MOBILE TICKET TOGGLE ================= */
@@ -1335,7 +1334,7 @@ function renderHistory(){
       const d = new Date(o.time);
       const linesStr = o.lines.map(l=>`${l.qty}× ${escapeHtml(l.name)}${l.note?` (${escapeHtml(l.note)})`:''}`).join(', ');
       return `<div class="hist-item ${o.voided?'voided':''}">
-        <div class="hist-top"><span>#${o.orderNo}${(o.table && o.table !== `Order #${o.orderNo}`) ? ' · '+escapeHtml(o.table) : ''} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div class="hist-top"><span>${o.table ? escapeHtml(o.table)+' · ' : ''}${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="hist-tags">
           <span class="hist-tag">${escapeHtml(o.orderType||'Dine-in')}</span>
           <span class="hist-tag">${escapeHtml(o.paymentMethod||'Cash')}</span>
@@ -1357,10 +1356,11 @@ function renderHistory(){
 function voidOrder(id){
   const o = salesLog.find(x=>x.id===id);
   if(!o) return;
-  if(!confirm(`Void order #${o.orderNo} for ${peso(o.total)}? It will be excluded from totals and reports.`)) return;
+  if(!confirm(`Void ${o.table ? "Table "+o.table : "this order"} for ${peso(o.total)}? It will be excluded from totals and reports.`)) return;
   o.voided = true;
   saveSales(); renderHistory();
-  showToast(`Order #${o.orderNo} voided`);
+  syncVoid(o);
+  showToast(`${o.table ? "Table "+o.table+" " : "Order "}voided`);
 }
 function clearHistory(){
   if(!confirm("Clear all sales history? This can't be undone.")) return;
@@ -1412,6 +1412,20 @@ async function syncOrder(order){
       pendingSync.push(order);
       savePendingSync();
     }
+  }
+}
+async function syncVoid(order){
+  if(!sheetsUrl) return;
+  try{
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({type:'void', order})
+    });
+  }catch(e){
+    // Best-effort — if this fails, the sheet just won't reflect the void
+    // until the next successful sync of some kind.
   }
 }
 async function syncInventorySnapshot(){
@@ -1480,12 +1494,12 @@ function downloadCSV(filename, rows){
 function exportOrdersCSV(){
   const orders = getRangeOrders();
   if(orders.length===0){ showToast("No orders in that range"); return; }
-  const rows = [["Order #","Table/Priority/Note","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
+  const rows = [["Table/Priority/Note","Date","Time","Order Type","Payment","Items","Subtotal","Discount","Total","Cash Received","Change"]];
   orders.forEach(o=>{
     const d = new Date(o.time);
     const itemsStr = o.lines.map(l=>`${l.qty}x ${l.name}${l.note?` (${l.note})`:''}`).join('; ');
     rows.push([
-      o.orderNo, o.table||'', d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+      o.table||'', d.toLocaleDateString(), d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
       o.orderType||'', o.paymentMethod||'',
       itemsStr, (o.subtotal||o.total).toFixed(2), (o.discount||0).toFixed(2), o.total.toFixed(2),
       o.cash.toFixed(2), Math.max(o.change,0).toFixed(2)
@@ -1493,7 +1507,7 @@ function exportOrdersCSV(){
   });
   const totalSales = orders.reduce((s,o)=>s+o.total,0);
   rows.push([]);
-  rows.push(["", "", "", "", "", "", "TOTAL", "", "", totalSales.toFixed(2), "", ""]);
+  rows.push(["", "", "", "", "", "TOTAL", "", "", totalSales.toFixed(2), "", ""]);
   downloadCSV(`balutan-orders-${dateStamp()}.csv`, rows);
   showToast("Orders CSV downloaded");
 }
