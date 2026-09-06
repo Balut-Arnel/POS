@@ -136,6 +136,12 @@
     font-weight:800; padding:3px 7px; border-radius:6px; letter-spacing:.5px;
   }
   .empty-menu{padding:40px; text-align:center; color:var(--muted2); font-size:14px;}
+  .stock-badge{
+    align-self:flex-start; font-size:9.5px; font-weight:800; padding:3px 7px; border-radius:6px;
+    letter-spacing:.2px; margin-top:-4px;
+  }
+  .stock-badge.warn{background:rgba(255,199,44,0.2); color:var(--yolk-dark); border:1px solid var(--yolk-dark);}
+  .stock-badge.out{background:rgba(196,20,17,0.12); color:var(--chili-dark); border:1px solid var(--chili-dark);}
 
   /* ---------- ORDER TICKET ---------- */
   .ticket-col{
@@ -434,6 +440,7 @@
   <div class="head-actions">
     <span class="clock" id="clock"></span>
     <button class="head-btn" onclick="openHistory()">🧾 Sales</button>
+    <button class="head-btn" onclick="requirePin(openZReport)">📊 Z-Report<span class="lock-badge">🔒</span></button>
     <button class="head-btn" onclick="requirePin(openInventory)">📦 Inventory<span class="lock-badge">🔒</span></button>
     <button class="head-btn" onclick="openSettings()">📋 Menu</button>
     <button class="head-btn" onclick="requirePin(openAppSettings)">⚙️ Settings<span class="lock-badge">🔒</span></button>
@@ -555,6 +562,13 @@
   </div>
 </div>
 
+<div class="overlay" id="zReportOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>📊 End-of-Day Report</h2><button class="modal-close" onclick="closeModal('zReportOverlay')">✕</button></div>
+    <div class="modal-body" id="zReportBody"></div>
+  </div>
+</div>
+
 <div class="overlay" id="pinOverlay">
   <div class="modal pin-modal">
     <div class="modal-body">
@@ -639,6 +653,7 @@ let highContrast = false;
 let uiLang = 'en';
 let lastBackupDate = null;
 let inventory = { date: null, counts: {} };
+let lowStockThreshold = 5;
 let gcashQr = "";
 let mayaQr = "";
 
@@ -678,6 +693,7 @@ async function loadData(){
   try{ const lang = await appStorage.get('uiLang'); if(lang && lang.value){ uiLang = lang.value; } }catch(e){}
   try{ const lb = await appStorage.get('lastBackupDate'); if(lb && lb.value) lastBackupDate = lb.value; }catch(e){}
   try{ const inv = await appStorage.get('inventory'); if(inv && inv.value) inventory = JSON.parse(inv.value); }catch(e){}
+  try{ const lst = await appStorage.get('lowStockThreshold'); if(lst && lst.value) lowStockThreshold = Number(lst.value) || 5; }catch(e){}
   try{ const gq = await appStorage.get('gcashQr'); if(gq && gq.value) gcashQr = gq.value; }catch(e){}
   try{ const mq = await appStorage.get('mayaQr'); if(mq && mq.value) mayaQr = mq.value; }catch(e){}
 
@@ -714,6 +730,7 @@ async function saveHighContrast(){ try{ await appStorage.set('highContrast', hig
 async function saveUiLang(){ try{ await appStorage.set('uiLang', uiLang); }catch(e){} }
 async function saveLastBackupDate(){ try{ await appStorage.set('lastBackupDate', lastBackupDate); }catch(e){} }
 async function saveInventory(){ try{ await appStorage.set('inventory', JSON.stringify(inventory)); }catch(e){} }
+async function saveLowStockThreshold(){ try{ await appStorage.set('lowStockThreshold', String(lowStockThreshold)); }catch(e){} }
 async function saveGcashQr(){ try{ await appStorage.set('gcashQr', gcashQr); }catch(e){ showToast("QR saved for this session only"); } }
 async function saveMayaQr(){ try{ await appStorage.set('mayaQr', mayaQr); }catch(e){ showToast("QR saved for this session only"); } }
 
@@ -723,6 +740,15 @@ function toggleHighContrast(){
   document.body.classList.toggle('hc-mode', highContrast);
   saveHighContrast();
   renderAppSettings();
+}
+
+/* ================= LOW STOCK THRESHOLD ================= */
+function updateLowStockThreshold(){
+  const val = parseInt(document.getElementById('lowStockInput').value, 10);
+  lowStockThreshold = isNaN(val) || val < 0 ? 0 : val;
+  saveLowStockThreshold();
+  renderGrid();
+  showToast(`Low stock alert set to ${lowStockThreshold}`);
 }
 
 /* ================= LANGUAGE ================= */
@@ -776,7 +802,7 @@ function getBackupInfo(){
 function downloadBackup(){
   const backup = {
     menu, salesLog, dayCounter, sheetsUrl, securityPin, pendingSync,
-    tickets, activeTicketId, inventory, gcashQr, mayaQr,
+    tickets, activeTicketId, inventory, gcashQr, mayaQr, lowStockThreshold,
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -811,9 +837,10 @@ function restoreFromFile(event){
       inventory = data.inventory || inventory;
       gcashQr = (data.gcashQr !== undefined) ? data.gcashQr : gcashQr;
       mayaQr = (data.mayaQr !== undefined) ? data.mayaQr : mayaQr;
+      lowStockThreshold = (data.lowStockThreshold !== undefined) ? Number(data.lowStockThreshold) : lowStockThreshold;
       tickets = (data.tickets && data.tickets.length) ? data.tickets : tickets;
       activeTicketId = data.activeTicketId || (tickets[0] && tickets[0].id);
-      saveMenu(); saveSales(); saveDayCounter(); saveSheetsUrl(); savePin(); savePendingSync(); saveTickets(); saveInventory(); saveGcashQr(); saveMayaQr();
+      saveMenu(); saveSales(); saveDayCounter(); saveSheetsUrl(); savePin(); savePendingSync(); saveTickets(); saveInventory(); saveGcashQr(); saveMayaQr(); saveLowStockThreshold();
       activeCategory = null;
       renderTabs(); renderGrid(); renderTicketTabs(); renderCart(); renderAppSettings();
       showToast("Backup restored ✓");
@@ -837,6 +864,12 @@ function soldQtyForItem(itemId, itemName){
     });
   });
   return sold;
+}
+function stockRemainingForItem(it){
+  if(inventory.date !== todayStr()) return null;
+  const raw = inventory.counts[it.id];
+  if(raw === undefined || raw === null || raw === '') return null;
+  return Number(raw) - soldQtyForItem(it.id, it.name);
 }
 function openInventory(){ renderInventory(); document.getElementById('inventoryOverlay').classList.add('show'); }
 function renderInventory(){
@@ -887,6 +920,7 @@ function saveTodayInventory(){
   inventory = { date: todayStr(), counts };
   saveInventory();
   renderInventory();
+  renderGrid();
   showToast("Today's inventory saved ✓");
   syncInventorySnapshot();
 }
@@ -895,6 +929,7 @@ function clearTodayInventory(){
   inventory = { date: null, counts: {} };
   saveInventory();
   renderInventory();
+  renderGrid();
   showToast("Inventory cleared");
 }
 
@@ -937,15 +972,25 @@ function renderGrid(){
     grid.innerHTML = `<div class="empty-menu">${i18n('noItemsCat')}</div>`;
     return;
   }
-  grid.innerHTML = items.map(it => `
+  grid.innerHTML = items.map(it => {
+    const remaining = stockRemainingForItem(it);
+    let stockBadge = '';
+    if(remaining !== null && remaining <= lowStockThreshold){
+      stockBadge = remaining <= 0
+        ? `<span class="stock-badge out">⚠️ Out of stock</span>`
+        : `<span class="stock-badge warn">⚠️ ${remaining} left</span>`;
+    }
+    return `
     <button class="item-card ${it.soldOut?'soldout':''}" onclick="addToCart('${it.id}')" ${it.soldOut?'disabled':''}>
       ${it.fav ? '<span class="fav-badge">⭐</span>' : ''}
       ${it.soldOut ? `<span class="soldout-badge">${i18n('soldOut')}</span>` : '<span class="plus">+</span>'}
       <span class="item-name">${escapeHtml(it.name)}</span>
       ${it.note ? `<span class="item-note">${escapeHtml(it.note)}</span>` : ''}
       <span class="item-price">${peso(it.price)}</span>
+      ${stockBadge}
     </button>
-  `).join('');
+  `;
+  }).join('');
 }
 
 /* ================= TICKET TABS ================= */
@@ -1233,8 +1278,22 @@ function completeOrder(){
   tickets = tickets.filter(x=>x.id!==t.id);
   if(tickets.length===0) tickets = [createTicketWithOrderNo()];
   activeTicketId = tickets[0].id;
-  renderTicketTabs(); renderCart();
+  renderTicketTabs(); renderCart(); renderGrid();
   showToast(`${order.table ? "Table "+order.table+" " : "Order "}completed ✓`);
+  notifyLowStockForOrder(order);
+}
+function notifyLowStockForOrder(order){
+  if(inventory.date !== todayStr()) return;
+  for(const cat in menu){
+    for(const it of (menu[cat]||[])){
+      if(!order.lines.some(l => l.id===it.id)) continue;
+      const remaining = stockRemainingForItem(it);
+      if(remaining !== null && remaining <= lowStockThreshold){
+        setTimeout(()=> showToast(remaining <= 0 ? `⚠️ ${it.name} is now out of stock` : `⚠️ Low stock: ${remaining} ${it.name} left`), 1200);
+        return;
+      }
+    }
+  }
 }
 
 /* ================= MOBILE TICKET TOGGLE ================= */
@@ -1329,6 +1388,14 @@ function renderAppSettings(){
         <button class="pill ${highContrast?'active':''}" onclick="toggleHighContrast()">☀️ Outdoor / High-Contrast Mode</button>
       </div>
       <p style="font-size:11px; color:var(--muted2); margin:8px 0 0;">Bigger text and stronger contrast — easier to read on a bright counter.</p>
+    </div>
+    <div class="pin-change-block">
+      <h3>Low Stock Alerts</h3>
+      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">When Daily Inventory is tracking an item, show a warning badge on its menu tile once remaining stock drops to or below this number.</p>
+      <div class="pin-change-row">
+        <input type="number" min="0" id="lowStockInput" value="${lowStockThreshold}" style="width:90px;">
+        <button class="small-btn" onclick="updateLowStockThreshold()">Save</button>
+      </div>
     </div>
     <div class="pin-change-block">
       <h3>Language</h3>
@@ -1523,7 +1590,7 @@ function renderHistory(){
         <div class="hist-lines">${linesStr}</div>
         ${(!o.voided && o.paymentMethod==='Cash') ? `<div class="hist-cash">Cash ${peso(o.cash)} · Change ${peso(Math.max(o.change,0))}</div>` : ''}
         <div class="hist-bottom">
-          ${o.voided ? '<span class="voided-tag">Voided</span>' : `<button class="void-btn" onclick="requirePin(function(){voidOrder('${o.id}')})">🔒 Void</button>`}
+          ${o.voided ? `<span class="voided-tag">Voided${o.voidReason ? ' · '+escapeHtml(o.voidReason) : ''}</span>` : `<button class="void-btn" onclick="requirePin(function(){voidOrder('${o.id}')})">🔒 Void</button>`}
           <div class="hist-total">${peso(o.total)}</div>
         </div>
       </div>`;
@@ -1536,15 +1603,108 @@ function renderHistory(){
 function voidOrder(id){
   const o = salesLog.find(x=>x.id===id);
   if(!o) return;
-  if(!confirm(`Void ${o.table ? "Table "+o.table : "this order"} for ${peso(o.total)}? It will be excluded from totals and reports.`)) return;
+  const reason = prompt(`Void ${o.table ? "Table "+o.table : "this order"} for ${peso(o.total)}?\n\nReason for void (e.g. wrong order, customer walked out, duplicate order):`, "");
+  if(reason === null) return;
   o.voided = true;
-  saveSales(); renderHistory();
+  o.voidReason = reason.trim() || "No reason given";
+  saveSales(); renderHistory(); renderGrid();
   syncVoid(o);
   showToast(`${o.table ? "Table "+o.table+" " : "Order "}voided`);
 }
 function clearHistory(){
   if(!confirm("Clear all sales history? This can't be undone.")) return;
   salesLog = []; saveSales(); renderHistory();
+}
+
+/* ================= Z-REPORT (END OF DAY) ================= */
+function openZReport(){ renderZReport(); document.getElementById('zReportOverlay').classList.add('show'); }
+function getZReportRange(){ return document.getElementById('zReportRange')?.value || 'today'; }
+function ordersInZRange(range){
+  const now = new Date();
+  let cutoff = null;
+  if(range === 'today') cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  else if(range === '7days') cutoff = new Date(now.getTime() - 7*24*60*60*1000);
+  else if(range === '30days') cutoff = new Date(now.getTime() - 30*24*60*60*1000);
+  return cutoff ? salesLog.filter(o => new Date(o.time) >= cutoff) : salesLog.slice();
+}
+function renderZReport(){
+  const body = document.getElementById('zReportBody');
+  const range = getZReportRange();
+  const all = ordersInZRange(range);
+  const voided = all.filter(o=>o.voided);
+  const completed = all.filter(o=>!o.voided);
+
+  const totalSales = completed.reduce((s,o)=>s+o.total,0);
+  const totalDiscount = completed.reduce((s,o)=>s+(o.discount||0),0);
+  const byPayment = {};
+  completed.forEach(o=>{
+    const pm = o.paymentMethod || 'Cash';
+    byPayment[pm] = (byPayment[pm]||0) + o.total;
+  });
+  const itemTotals = {};
+  completed.forEach(o=> o.lines.forEach(l=>{
+    if(!itemTotals[l.name]) itemTotals[l.name] = {qty:0, revenue:0};
+    itemTotals[l.name].qty += l.qty;
+    itemTotals[l.name].revenue += l.qty*l.price;
+  }));
+  const bestSellers = Object.entries(itemTotals).sort((a,b)=>b[1].qty-a[1].qty).slice(0,5);
+
+  let html = `<div class="export-bar">
+    <select id="zReportRange" onchange="renderZReport()">
+      <option value="today" ${range==='today'?'selected':''}>Today</option>
+      <option value="7days" ${range==='7days'?'selected':''}>Last 7 days</option>
+      <option value="30days" ${range==='30days'?'selected':''}>Last 30 days</option>
+      <option value="all" ${range==='all'?'selected':''}>All time</option>
+    </select>
+  </div>`;
+
+  html += `<div class="day-summary" style="margin-bottom:18px;">
+    <div><div class="lbl">Total Sales</div><div class="amt">${peso(totalSales)}</div></div>
+    <div style="text-align:right"><div class="lbl">Orders</div><div class="amt">${completed.length}</div></div>
+  </div>`;
+
+  html += `<div class="cat-block"><h3>Payment Breakdown</h3>`;
+  if(completed.length===0){
+    html += `<div class="empty-hist" style="padding:14px 0;">No sales in this range.</div>`;
+  }else{
+    html += PAYMENT_METHODS.map(pm => `
+      <div class="menu-row" style="justify-content:space-between;">
+        <span style="font-weight:700;">${pm}</span>
+        <span class="item-price">${peso(byPayment[pm]||0)}</span>
+      </div>`).join('');
+  }
+  html += `</div>`;
+
+  html += `<div class="cat-block"><h3>Discounts &amp; Voids</h3>
+    <div class="menu-row" style="justify-content:space-between;"><span>Total discounts given</span><span class="item-price">${peso(totalDiscount)}</span></div>
+    <div class="menu-row" style="justify-content:space-between;"><span>Voided orders</span><span class="item-price">${voided.length}</span></div>
+  </div>`;
+
+  html += `<div class="cat-block"><h3>Top Sellers</h3>`;
+  if(bestSellers.length===0){
+    html += `<div class="empty-hist" style="padding:14px 0;">No items sold in this range.</div>`;
+  }else{
+    html += bestSellers.map(([name, v], i) => `
+      <div class="menu-row" style="justify-content:space-between;">
+        <span style="font-weight:700;">${i+1}. ${escapeHtml(name)}</span>
+        <span style="font-size:12px; color:var(--muted2);">${v.qty} sold · ${peso(v.revenue)}</span>
+      </div>`).join('');
+  }
+  html += `</div>`;
+
+  if(voided.length > 0){
+    html += `<div class="cat-block"><h3>Voided Orders</h3>`;
+    html += voided.map(o=>{
+      const d = new Date(o.time);
+      return `<div class="menu-row" style="justify-content:space-between; flex-wrap:wrap;">
+        <span>${o.table ? escapeHtml(o.table)+' · ' : ''}${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+        <span style="font-size:11.5px; color:var(--muted2);">${peso(o.total)}${o.voidReason ? ' · '+escapeHtml(o.voidReason) : ''}</span>
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
 }
 
 function renderChart(){
