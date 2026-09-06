@@ -303,6 +303,27 @@
   .modal-close:hover{color:var(--chili);}
   .modal-body{padding:20px 22px;overflow-y:auto;}
 
+  /* ---------- QR SLIDER ---------- */
+  .qr-slider-viewport{display:flex; align-items:center; gap:4px;}
+  .qr-slider{flex:1; overflow:hidden; border-radius:14px;}
+  .qr-slider-track{display:flex; transition:transform .28s cubic-bezier(.25,.8,.4,1);}
+  .qr-page{flex:0 0 100%; width:100%; text-align:center; padding:2px 8px; box-sizing:border-box;}
+  .qr-nav-btn{
+    flex-shrink:0; width:34px; height:34px; border-radius:50%; border:1.5px solid var(--line);
+    background:var(--panel); color:var(--broth); font-size:18px; font-weight:900; line-height:1;
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);
+    transition:background .15s ease, transform .12s ease;
+  }
+  .qr-nav-btn:hover{background:var(--cream);}
+  .qr-nav-btn:active{transform:scale(0.9);}
+  .qr-dots{display:flex; justify-content:center; gap:8px; margin-top:14px;}
+  .qr-dot{width:8px; height:8px; border-radius:50%; background:var(--line); cursor:pointer; transition:background .15s ease, transform .15s ease;}
+  .qr-dot.active{background:var(--chili); transform:scale(1.2);}
+  .qr-page-label{font-size:13px; font-weight:800; color:var(--broth-2); margin-bottom:8px;}
+  .qr-page-amount{font-size:12.5px; color:var(--muted2); margin-bottom:12px;}
+  .qr-page-img{width:100%; max-width:240px; border-radius:14px; border:1.5px solid var(--line); box-shadow:var(--shadow-md); background:#fff;}
+  .qr-page-empty{font-size:13px; color:var(--muted2); line-height:1.5; padding:20px 4px;}
+
   .menu-row{display:flex; gap:6px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
   .menu-row input[type=text], .menu-row input[type=number]{
     border:1px solid var(--line); border-radius:9px; padding:7px 9px; font-size:13px; font-family:var(--disp); background:var(--cream);
@@ -499,6 +520,28 @@
   </div>
 </div>
 
+<div class="overlay" id="qrOverlay">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-head"><h2 id="qrOverlayTitle">📱 QR Code</h2><button class="modal-close" onclick="closeModal('qrOverlay')">✕</button></div>
+    <div class="modal-body" style="padding:14px 8px 20px;">
+      <div class="qr-slider-viewport">
+        <button class="qr-nav-btn qr-nav-prev" onclick="qrSlide(-1)" aria-label="Previous QR">‹</button>
+        <div class="qr-slider" id="qrSlider">
+          <div class="qr-slider-track" id="qrSliderTrack">
+            <div class="qr-page" id="qrPage0"></div>
+            <div class="qr-page" id="qrPage1"></div>
+          </div>
+        </div>
+        <button class="qr-nav-btn qr-nav-next" onclick="qrSlide(1)" aria-label="Next QR">›</button>
+      </div>
+      <div class="qr-dots" id="qrDots">
+        <span class="qr-dot" onclick="showQrPage(0)"></span>
+        <span class="qr-dot" onclick="showQrPage(1)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="historyOverlay">
   <div class="modal">
     <div class="modal-head">
@@ -596,6 +639,8 @@ let highContrast = false;
 let uiLang = 'en';
 let lastBackupDate = null;
 let inventory = { date: null, counts: {} };
+let gcashQr = "";
+let mayaQr = "";
 
 function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
@@ -633,6 +678,8 @@ async function loadData(){
   try{ const lang = await appStorage.get('uiLang'); if(lang && lang.value){ uiLang = lang.value; } }catch(e){}
   try{ const lb = await appStorage.get('lastBackupDate'); if(lb && lb.value) lastBackupDate = lb.value; }catch(e){}
   try{ const inv = await appStorage.get('inventory'); if(inv && inv.value) inventory = JSON.parse(inv.value); }catch(e){}
+  try{ const gq = await appStorage.get('gcashQr'); if(gq && gq.value) gcashQr = gq.value; }catch(e){}
+  try{ const mq = await appStorage.get('mayaQr'); if(mq && mq.value) mayaQr = mq.value; }catch(e){}
 
   try{
     const ot = await appStorage.get('openTickets');
@@ -667,6 +714,8 @@ async function saveHighContrast(){ try{ await appStorage.set('highContrast', hig
 async function saveUiLang(){ try{ await appStorage.set('uiLang', uiLang); }catch(e){} }
 async function saveLastBackupDate(){ try{ await appStorage.set('lastBackupDate', lastBackupDate); }catch(e){} }
 async function saveInventory(){ try{ await appStorage.set('inventory', JSON.stringify(inventory)); }catch(e){} }
+async function saveGcashQr(){ try{ await appStorage.set('gcashQr', gcashQr); }catch(e){ showToast("QR saved for this session only"); } }
+async function saveMayaQr(){ try{ await appStorage.set('mayaQr', mayaQr); }catch(e){ showToast("QR saved for this session only"); } }
 
 /* ================= DISPLAY MODE ================= */
 function toggleHighContrast(){
@@ -727,7 +776,7 @@ function getBackupInfo(){
 function downloadBackup(){
   const backup = {
     menu, salesLog, dayCounter, sheetsUrl, securityPin, pendingSync,
-    tickets, activeTicketId, inventory,
+    tickets, activeTicketId, inventory, gcashQr, mayaQr,
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -760,9 +809,11 @@ function restoreFromFile(event){
       securityPin = data.securityPin || securityPin;
       pendingSync = data.pendingSync || pendingSync;
       inventory = data.inventory || inventory;
+      gcashQr = (data.gcashQr !== undefined) ? data.gcashQr : gcashQr;
+      mayaQr = (data.mayaQr !== undefined) ? data.mayaQr : mayaQr;
       tickets = (data.tickets && data.tickets.length) ? data.tickets : tickets;
       activeTicketId = data.activeTicketId || (tickets[0] && tickets[0].id);
-      saveMenu(); saveSales(); saveDayCounter(); saveSheetsUrl(); savePin(); savePendingSync(); saveTickets(); saveInventory();
+      saveMenu(); saveSales(); saveDayCounter(); saveSheetsUrl(); savePin(); savePendingSync(); saveTickets(); saveInventory(); saveGcashQr(); saveMayaQr();
       activeCategory = null;
       renderTabs(); renderGrid(); renderTicketTabs(); renderCart(); renderAppSettings();
       showToast("Backup restored ✓");
@@ -977,7 +1028,61 @@ function clearOrder(){
   renderCart(); renderTicketTabs();
 }
 
-function setPaymentMethod(pm){ activeTicket().paymentMethod = pm; renderCart(); }
+function setPaymentMethod(pm){
+  activeTicket().paymentMethod = pm;
+  renderCart();
+}
+const QR_PAGES = [
+  {label:'GCash', get value(){ return gcashQr; }},
+  {label:'Maya', get value(){ return mayaQr; }}
+];
+let qrCurrentIndex = 0;
+function buildQrPageHtml(label, qrValue, total){
+  if(qrValue){
+    return `
+      <div class="qr-page-label">${label}</div>
+      <div class="qr-page-amount">Let the customer scan to pay ${peso(total)}</div>
+      <img src="${qrValue}" alt="${label} QR Code" class="qr-page-img">`;
+  }
+  return `
+    <div class="qr-page-label">${label}</div>
+    <div class="qr-page-empty">No ${label} QR code has been uploaded yet.<br><br>Go to <strong>⚙️ Settings → ${label} QR Code</strong> to upload one.</div>`;
+}
+function renderQrPages(){
+  const t = activeTicket();
+  const subtotal = cartSubtotal(t);
+  const discount = calcDiscount(t, subtotal);
+  const total = Math.max(subtotal - discount, 0);
+  QR_PAGES.forEach((p, i)=>{
+    document.getElementById('qrPage'+i).innerHTML = buildQrPageHtml(p.label, p.value, total);
+  });
+}
+function showQrPage(index){
+  qrCurrentIndex = ((index % QR_PAGES.length) + QR_PAGES.length) % QR_PAGES.length;
+  document.getElementById('qrSliderTrack').style.transform = `translateX(-${qrCurrentIndex * 100}%)`;
+  document.getElementById('qrOverlayTitle').textContent = `📱 ${QR_PAGES[qrCurrentIndex].label} QR Code`;
+  document.querySelectorAll('#qrDots .qr-dot').forEach((dot, i)=> dot.classList.toggle('active', i===qrCurrentIndex));
+}
+function qrSlide(delta){ showQrPage(qrCurrentIndex + delta); }
+function openQrOverlay(index){
+  renderQrPages();
+  showQrPage(index);
+  document.getElementById('qrOverlay').classList.add('show');
+}
+function showGcashQr(){ openQrOverlay(0); }
+function showMayaQr(){ openQrOverlay(1); }
+(function setupQrSwipe(){
+  const slider = document.getElementById('qrSlider');
+  if(!slider) return;
+  let startX = null;
+  slider.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; }, {passive:true});
+  slider.addEventListener('touchend', (e)=>{
+    if(startX===null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if(Math.abs(dx) > 40) qrSlide(dx < 0 ? 1 : -1);
+    startX = null;
+  }, {passive:true});
+})();
 function toggleDiscountRow(){
   const row = document.getElementById('discountRow');
   row.classList.toggle('show');
@@ -1008,7 +1113,9 @@ function renderCart(){
 
   document.getElementById('paymentPills').innerHTML = PAYMENT_METHODS.map(pm =>
     `<button class="pill ${t.paymentMethod===pm?'active pay':''}" onclick="setPaymentMethod('${pm}')">${pm}</button>`
-  ).join('');
+  ).join('')
+    + (t.paymentMethod==='GCash' ? `<button class="pill" onclick="showGcashQr()">🔳 Show QR</button>` : '')
+    + (t.paymentMethod==='Maya' ? `<button class="pill" onclick="showMayaQr()">🔳 Show QR</button>` : '');
   document.getElementById('cashRow').style.display = t.paymentMethod==='Cash' ? 'flex' : 'none';
   document.getElementById('quickCash').style.display = t.paymentMethod==='Cash' ? 'flex' : 'none';
 
@@ -1181,6 +1288,34 @@ function renderAppSettings(){
       </div>
     </div>
     <div class="pin-change-block">
+      <h3>GCash QR Code</h3>
+      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">Upload a photo or screenshot of your GCash QR code. It will pop up automatically whenever GCash is selected as the payment method so you can show it to the customer to scan.</p>
+      <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+        ${gcashQr
+          ? `<img src="${gcashQr}" alt="GCash QR" style="width:84px; height:84px; object-fit:contain; border-radius:10px; border:1.5px solid var(--line); background:#fff;">`
+          : `<div style="width:84px; height:84px; border-radius:10px; border:1.5px dashed var(--line); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--muted2); text-align:center; padding:6px;">No QR uploaded</div>`}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="file" accept="image/*" id="gcashQrFile" style="display:none;" onchange="handleGcashQrUpload(event)">
+          <button class="small-btn" onclick="document.getElementById('gcashQrFile').click()">⬆️ ${gcashQr ? 'Replace QR' : 'Upload QR'}</button>
+          ${gcashQr ? `<button class="small-btn alt" onclick="removeGcashQr()">🗑️ Remove QR</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="pin-change-block">
+      <h3>Maya QR Code</h3>
+      <p style="font-size:11.5px; color:var(--muted2); margin:-4px 0 10px; line-height:1.5;">Upload a photo or screenshot of your Maya QR code. It will pop up automatically whenever Maya is selected as the payment method so you can show it to the customer to scan.</p>
+      <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+        ${mayaQr
+          ? `<img src="${mayaQr}" alt="Maya QR" style="width:84px; height:84px; object-fit:contain; border-radius:10px; border:1.5px solid var(--line); background:#fff;">`
+          : `<div style="width:84px; height:84px; border-radius:10px; border:1.5px dashed var(--line); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--muted2); text-align:center; padding:6px;">No QR uploaded</div>`}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="file" accept="image/*" id="mayaQrFile" style="display:none;" onchange="handleMayaQrUpload(event)">
+          <button class="small-btn" onclick="document.getElementById('mayaQrFile').click()">⬆️ ${mayaQr ? 'Replace QR' : 'Upload QR'}</button>
+          ${mayaQr ? `<button class="small-btn alt" onclick="removeMayaQr()">🗑️ Remove QR</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="pin-change-block">
       <h3>Security PIN</h3>
       <div class="pin-change-row">
         <input type="password" id="curPin" placeholder="Current PIN" inputmode="numeric" maxlength="6">
@@ -1211,6 +1346,51 @@ function renderAppSettings(){
         <button class="small-btn alt" onclick="triggerRestoreFile()">⬆️ Restore from File</button>
       </div>
     </div>`;
+}
+
+function handleGcashQrUpload(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast("Please choose an image file"); event.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    gcashQr = e.target.result;
+    saveGcashQr();
+    renderAppSettings();
+    showToast("GCash QR code updated ✓");
+  };
+  reader.onerror = function(){ showToast("Couldn't read that image"); };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+function removeGcashQr(){
+  if(!confirm("Remove the saved GCash QR code?")) return;
+  gcashQr = "";
+  saveGcashQr();
+  renderAppSettings();
+  showToast("GCash QR code removed");
+}
+function handleMayaQrUpload(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast("Please choose an image file"); event.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    mayaQr = e.target.result;
+    saveMayaQr();
+    renderAppSettings();
+    showToast("Maya QR code updated ✓");
+  };
+  reader.onerror = function(){ showToast("Couldn't read that image"); };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+function removeMayaQr(){
+  if(!confirm("Remove the saved Maya QR code?")) return;
+  mayaQr = "";
+  saveMayaQr();
+  renderAppSettings();
+  showToast("Maya QR code removed");
 }
 
 function renderMenuEditor(){
